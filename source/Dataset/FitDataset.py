@@ -1,21 +1,20 @@
-import json
 import pickle
 
 import torch
 from torch.utils.data import Dataset
 
 
-class BiEncoderDataset(Dataset):
+class FitDataset(Dataset):
     """CodeSearch Dataset.
     """
 
-    def __init__(self, samples, ids_path, desc_tokenizer, code_tokenizer, desc_max_length, code_max_length):
-        super(BiEncoderDataset, self).__init__()
+    def __init__(self, samples, ids_path, text_tokenizer, label_tokenizer, text_max_length, label_max_length):
+        super(FitDataset, self).__init__()
         self.samples = samples
-        self.desc_tokenizer = desc_tokenizer
-        self.code_tokenizer = code_tokenizer
-        self.desc_max_length = desc_max_length
-        self.code_max_length = code_max_length
+        self.text_tokenizer = text_tokenizer
+        self.label_tokenizer = label_tokenizer
+        self.text_max_length = text_max_length
+        self.label_max_length = label_max_length
         self._load_ids(ids_path)
 
     def _load_ids(self, ids_path):
@@ -24,14 +23,13 @@ class BiEncoderDataset(Dataset):
 
     def _encode(self, sample):
         return {
-            "idx": sample["idx"],
-            "desc": torch.tensor(
-                self.desc_tokenizer.encode(text=sample["desc"], max_length=self.desc_max_length, padding="max_length",
+            "text": torch.tensor(
+                self.text_tokenizer.encode(text=sample["text"], max_length=self.text_max_length, padding="max_length",
                                            truncation=True)
             ),
-            "code": torch.tensor(
-                self.code_tokenizer.encode(text=sample["code"], max_length=self.code_max_length, padding="max_length",
-                                           truncation=True)
+            "label": torch.tensor(
+                self.label_tokenizer.encode(text=sample["label"], max_length=self.label_max_length, padding="max_length",
+                                            truncation=True)
             )
         }
 
