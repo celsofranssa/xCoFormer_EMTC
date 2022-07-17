@@ -4,7 +4,7 @@ from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 
-from source.DataModule.BiEncoderDataModule import BiEncoderDataModule
+from source.DataModule.FitDataModule import BiEncoderDataModule
 from source.callback.PredictionWriter import PredictionWriter
 from source.model.BiEncoderModel import BiEncoderModel
 
@@ -19,8 +19,8 @@ class PredictHelper:
             # data
             dm = BiEncoderDataModule(
                 self.params.data,
-                self.get_tokenizer(self.params.model.desc_tokenizer),
-                self.get_tokenizer(self.params.model.code_tokenizer),
+                self.get_tokenizer(self.params.model.text_tokenizer),
+                self.get_tokenizer(self.params.model.label_tokenizer),
                 fold=fold)
 
             # model

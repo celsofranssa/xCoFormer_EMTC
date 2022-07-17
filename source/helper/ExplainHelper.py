@@ -7,7 +7,7 @@ from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 
-from source.DataModule.BiEncoderDataModule import BiEncoderDataModule
+from source.DataModule.FitDataModule import BiEncoderDataModule
 from source.model.BiEncoderModel import BiEncoderModel
 
 
@@ -28,8 +28,8 @@ class ExplainHelper:
         x1_tokenizer = self.get_tokenizer(self.params.model)
         x2_tokenizer = x1_tokenizer
 
-        x1_length = self.params.data.desc_max_length
-        x2_length = self.params.data.code_max_length
+        x1_length = self.params.data.text_max_length
+        x2_length = self.params.data.label_max_length
 
         desc, code = self.get_sample(
             self.params.attentions.sample_id,
