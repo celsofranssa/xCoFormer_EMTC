@@ -1,3 +1,0 @@
-{"id":0,"desc":"calculates the factorial of an integer", "code":"public int factorial (int n) { if (n == 1) { return 1; } return n * factorial (n - 1); }"}
-{"id":1,"desc":"tests whether a given value is present in a list","code":"public boolean contains ( int [ ] numbers, int target ) { for ( int number: numbers ) { if  (number == target ) { return true; } } return false; }"}
-{"id":2,"desc":"computes the sum of integers","code": "int add (int [] numbers) { int total = 0; for ( int number: numbers ) { total += number; } return total; }"}
