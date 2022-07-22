@@ -1,8 +1,9 @@
 defaults:
-  - model: CLM_CoTNG
-  - data: PYTHON
+  - _self_
+  - model: BERT_TGT
+  - data: EURLEX57K
 
-tasks: [ "fit" ]
+tasks: [ "predict" ]
 
 trainer:
   max_epochs: 16

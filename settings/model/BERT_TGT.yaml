@@ -1,13 +1,13 @@
-name: BERT
+name: BERT_TGT
 
-desc_encoder:
+text_encoder:
   _target_: source.encoder.BertEncoder.BertEncoder
   architecture: bert-base-uncased
   output_attentions: False
   pooling:
     _target_: source.pooling.NoPooling.NoPooling
 
-code_encoder:
+label_encoder:
   _target_: source.encoder.BertEncoder.BertEncoder
   architecture: bert-base-uncased
   output_attentions: False
@@ -16,22 +16,22 @@ code_encoder:
 
 hidden_size: 768
 
-desc_tokenizer:
-  architecture: ${model.desc_encoder.architecture}
+text_tokenizer:
+  architecture: ${model.text_encoder.architecture}
 
-code_tokenizer:
-  architecture: ${model.code_encoder.architecture}
+label_tokenizer:
+  architecture: ${model.label_encoder.architecture}
 
 lr: 5e-5
-desc_lr: 5e-5
-code_lr: 5e-5
+text_lr: 5e-5
+label_lr: 5e-5
 base_lr: 5e-6
 max_lr: 5e-3
 weight_decay: 1e-2
 
-co_training: False
-desc_frequency_opt: 1
-code_frequency_opt: 1
+tag_training: True
+text_frequency_opt: 1
+label_frequency_opt: 1
 
 loss:
   _target_: source.loss.NPairsLoss.NPairsLoss

@@ -1,21 +1,11 @@
 # activate venv and set Python path
-source ~/projects/venvs/xCoFormer/bin/activate
-export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer/
+source ~/projects/venvs/xCoFormer_EMTC/bin/activate
+export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer_EMTC/
 
-# CLM_CoTNG JAVASCRIPT
+# BERT_TGT EURLEX57K
 python main.py \
-  tasks=[z_shot] \
-  model=CLM_CoTNG \
-  data=JAVASCRIPT
+  tasks=[predict] \
+  model=BERT_TGT \
+  data=EURLEX57K \
+  data.folds=[0]
 
-# CLM_CoTNG PYTHON
-python main.py \
-  tasks=[z_shot] \
-  model=CLM_CoTNG \
-  data=PYTHON
-
-# CLM_CoTNG JAVA
-python main.py \
-  tasks=[z_shot] \
-  model=CLM_CoTNG \
-  data=JAVA
