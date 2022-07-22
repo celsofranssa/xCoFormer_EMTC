@@ -2,7 +2,6 @@ import hydra
 import os
 from omegaconf import OmegaConf
 from source.helper.EvalHelper import EvalHelper
-from source.helper.ExplainHelper import ExplainHelper
 from source.helper.FitHelper import FitHelper
 from source.helper.PredictHelper import PredictHelper
 
@@ -18,10 +17,6 @@ def eval(params):
     eval_helper = EvalHelper(params)
     eval_helper.perform_eval()
 
-def explain(params):
-    explain_helper = ExplainHelper(params)
-    explain_helper.perform_explain()
-
 @hydra.main(config_path="settings", config_name="settings.yaml")
 def perform_tasks(params):
     os.chdir(hydra.utils.get_original_cwd())
@@ -34,9 +29,6 @@ def perform_tasks(params):
 
     if "eval" in params.tasks:
         eval(params)
-
-    if "explain" in params.tasks:
-        explain(params)
 
 if __name__ == '__main__':
     perform_tasks()

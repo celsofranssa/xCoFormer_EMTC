@@ -4,8 +4,8 @@ from pytorch_lightning import loggers
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 
-from source.DataModule.FitDataModule import BiEncoderDataModule
-from source.model.BiEncoderModel import BiEncoderModel
+from source.DataModule.EMTCDataModule import EMTCDataModule
+from source.model.EMTCModel import EMTCModel
 
 
 class FitHelper:
@@ -31,14 +31,14 @@ class FitHelper:
             )
 
             # datamodule
-            datamodule = BiEncoderDataModule(
+            datamodule = EMTCDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.text_tokenizer),
                 self.get_tokenizer(self.params.model.label_tokenizer),
                 fold=fold)
 
             # model
-            model = BiEncoderModel(self.params.model)
+            model = EMTCModel(self.params.model)
 
             # Train the ⚡ model
             print(

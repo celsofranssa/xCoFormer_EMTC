@@ -1,12 +1,10 @@
 from omegaconf import OmegaConf
 import pytorch_lightning as pl
-from pytorch_lightning import loggers
-from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping
 from transformers import AutoTokenizer
 
-from source.DataModule.FitDataModule import BiEncoderDataModule
+from source.DataModule.EMTCDataModule import EMTCDataModule
 from source.callback.PredictionWriter import PredictionWriter
-from source.model.BiEncoderModel import BiEncoderModel
+from source.model.EMTCModel import EMTCModel
 
 
 class PredictHelper:
@@ -17,14 +15,14 @@ class PredictHelper:
     def perform_predict(self):
         for fold in self.params.data.folds:
             # data
-            dm = BiEncoderDataModule(
+            dm = EMTCDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.text_tokenizer),
                 self.get_tokenizer(self.params.model.label_tokenizer),
                 fold=fold)
 
             # model
-            model = BiEncoderModel.load_from_checkpoint(
+            model = EMTCModel.load_from_checkpoint(
                 checkpoint_path=f"{self.params.model_checkpoint.dir}{self.params.model.name}_{self.params.data.name}_{fold}.ckpt"
             )
 

@@ -1,21 +1,19 @@
-import json
 import pickle
 
 import torch
 from torch.utils.data import Dataset
 
 
-class BiEncoderDataset(Dataset):
-    """CodeSearch Dataset.
+class EvalDataset(Dataset):
+    """Eval Dataset.
     """
 
-    def __init__(self, samples, ids_path, desc_tokenizer, code_tokenizer, desc_max_length, code_max_length):
-        super(BiEncoderDataset, self).__init__()
+    def __init__(self, samples, ids_path, tokenizer, max_length, modality):
+        super(EvalDataset, self).__init__()
         self.samples = samples
-        self.desc_tokenizer = desc_tokenizer
-        self.code_tokenizer = code_tokenizer
-        self.desc_max_length = desc_max_length
-        self.code_max_length = code_max_length
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.modality = modality
         self._load_ids(ids_path)
 
     def _load_ids(self, ids_path):
@@ -23,23 +21,32 @@ class BiEncoderDataset(Dataset):
             self.ids = pickle.load(ids_file)
 
     def _encode(self, sample):
-        return {
-            "idx": sample["idx"],
-            "desc": torch.tensor(
-                self.desc_tokenizer.encode(text=sample["desc"], max_length=self.desc_max_length, padding="max_length",
-                                           truncation=True)
-            ),
-            "code": torch.tensor(
-                self.code_tokenizer.encode(text=sample["code"], max_length=self.code_max_length, padding="max_length",
-                                           truncation=True)
-            )
-        }
+        if self.modality == "text":
+            return {
+                "idx": sample["text_idx"],
+                "modality": "text",
+                "sample": torch.tensor(
+                    self.tokenizer.encode(
+                        text=sample["text"], max_length=self.max_length, padding="max_length", truncation=True
+                    )
+                )
+            }
+        elif self.modality == "label":
+            return {
+                "idx": sample["label_idx"],
+                "modality": "label",
+                "sample": torch.tensor(
+                    self.tokenizer.encode(
+                        text=sample["label"], max_length=self.max_length, padding="max_length", truncation=True
+                    )
+                )
+            }
 
     def __len__(self):
         return len(self.ids)
 
     def __getitem__(self, idx):
-        sample_id = self.ids[idx]
+        sample_idx = self.ids[idx]
         return self._encode(
-            self.samples[sample_id]
+            self.samples[sample_idx]
         )
