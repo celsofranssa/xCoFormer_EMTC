@@ -17,7 +17,7 @@ def eval(params):
     eval_helper = EvalHelper(params)
     eval_helper.perform_eval()
 
-@hydra.main(config_path="settings", config_name="settings.yaml")
+@hydra.main(config_path="settings", config_name="settings.yaml", version_base=None)
 def perform_tasks(params):
     os.chdir(hydra.utils.get_original_cwd())
     OmegaConf.resolve(params)

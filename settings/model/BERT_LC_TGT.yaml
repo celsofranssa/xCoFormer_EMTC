@@ -1,0 +1,39 @@
+name: BERT_LC_TGT
+
+text_encoder:
+  _target_: source.encoder.BertEncoder.BertEncoder
+  architecture: bert-large-cased
+  output_attentions: False
+  pooling:
+    _target_: source.pooling.NoPooling.NoPooling
+
+label_encoder:
+  _target_: source.encoder.BertEncoder.BertEncoder
+  architecture: bert-large-cased
+  output_attentions: False
+  pooling:
+    _target_: source.pooling.NoPooling.NoPooling
+
+hidden_size: 1024
+
+text_tokenizer:
+  architecture: ${model.text_encoder.architecture}
+
+label_tokenizer:
+  architecture: ${model.label_encoder.architecture}
+
+lr: 5e-5
+text_lr: 5e-5
+label_lr: 5e-5
+base_lr: 5e-6
+max_lr: 5e-3
+weight_decay: 1e-2
+
+tag_training: True
+text_frequency_opt: 1
+label_frequency_opt: 1
+
+loss:
+  _target_: source.loss.NPairsLoss.NPairsLoss
+  params:
+    name: N-Pair-Loss

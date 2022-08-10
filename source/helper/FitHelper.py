@@ -65,6 +65,7 @@ class FitHelper:
             mode="max"
         )
 
+
     def get_early_stopping_callback(self, params):
         return EarlyStopping(
             monitor='val_MRR',

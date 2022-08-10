@@ -10,15 +10,25 @@ class EvalDataset(Dataset):
 
     def __init__(self, samples, ids_path, tokenizer, max_length, modality):
         super(EvalDataset, self).__init__()
-        self.samples = samples
+        self._filter_samples(
+            samples,
+            self._load_ids(ids_path)
+        )
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.modality = modality
-        self._load_ids(ids_path)
+
+    def _filter_samples(self, samples, ids):
+        self.samples = filter(
+            lambda sample:
+            sample["idx"] in ids,
+            samples
+        )
+
 
     def _load_ids(self, ids_path):
         with open(ids_path, "rb") as ids_file:
-            self.ids = pickle.load(ids_file)
+            return pickle.load(ids_file)
 
     def _encode(self, sample):
         if self.modality == "text":
@@ -43,10 +53,9 @@ class EvalDataset(Dataset):
             }
 
     def __len__(self):
-        return len(self.ids)
+        return len(self.samples)
 
     def __getitem__(self, idx):
-        sample_idx = self.ids[idx]
         return self._encode(
-            self.samples[sample_idx]
+            self.samples[idx]
         )

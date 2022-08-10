@@ -47,16 +47,16 @@ class EMTCModel(LightningModule):
         self.mrr.compute()
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        idx, sample, modality = batch["idx"], batch["sample"], batch["modality"][0]
+        idx, sample, modality = batch["idx"], batch["sample"], batch["modality"]
         prediction = {}
 
-        if modality == "text":
+        if modality[0] == "text":
             prediction = {
                 "idx": idx,
                 "modality": modality,
                 "rpr": self.text_encoder(sample)
             }
-        elif modality == "label":
+        elif modality[0] == "label":
             prediction = {
                 "idx": idx,
                 "modality": modality,
@@ -89,7 +89,8 @@ class EMTCModel(LightningModule):
                                             betas=(0.9, 0.999),
                                             eps=1e-08, weight_decay=self.hparams.weight_decay, amsgrad=True)
         # schedulers
-        step_size_up = round(0.03 * self.num_training_steps)
+        step_size_up = round(0.03 * self.trainer.estimated_stepping_batches)
+
 
         text_scheduler = torch.optim.lr_scheduler.CyclicLR(text_optimizer, mode='triangular2',
                                                            base_lr=self.hparams.base_lr,
@@ -112,6 +113,7 @@ class EMTCModel(LightningModule):
 
         # schedulers
         step_size_up = round(0.03 * self.num_training_steps)
+
 
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='triangular2',
                                                       base_lr=self.hparams.base_lr,

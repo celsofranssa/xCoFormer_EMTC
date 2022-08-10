@@ -1,6 +1,7 @@
 import pickle
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from source.Dataset.EvalDataset import EvalDataset
 from source.Dataset.FitDataset import FitDataset
@@ -19,6 +20,7 @@ class EMTCDataModule(pl.LightningDataModule):
         self.fold = fold
 
     def prepare_data(self):
+        self.samples = []
         with open(self.params.dir + f"samples.pkl", "rb") as dataset_file:
             self.samples = pickle.load(dataset_file)
 

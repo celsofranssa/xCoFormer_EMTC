@@ -3,8 +3,8 @@ dir: resource/dataset/Eurlex57k/
 
 folds: [0,1,2,3,4]
 
-text_max_length: 256
+text_max_length: 128
 label_max_length: 16
 
-batch_size: 2
+batch_size: 64
 num_workers: 12

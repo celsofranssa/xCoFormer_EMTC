@@ -1,13 +1,13 @@
-# xCoFormer
+# xCoFormer EMTC
 
 ### 1. Quick Start
 
 ```shell script
 # clone the project 
-git clone git@github.com:celsofranssa/xCoFormer.git
+git clone git@github.com:celsofranssa/xCoFormer_EMTC.git
 
 # change directory to project folder
-cd xCoFormer/
+cd xCoFormer_EMTC/
 
 # Create a new virtual environment by choosing a Python interpreter 
 # and making a ./venv directory to hold it:
@@ -20,37 +20,34 @@ source ./venv/bin/activate
 pip install -r requirements.txt
 
 # setting python path
-export PYTHONPATH=$PATHONPATH:<path-to-project-dir>/xCoFormer/
+export PYTHONPATH=$PATHONPATH:<path-to-project-dir>/xCoFormer_EMTC/
 
 # (if you need) to exit virtualenv later:
 deactivate
 ```
 
 ### 2. Datasets
-Download the datasets from [kaggle](https://www.kaggle.com/datasets/celsofranssa/xcoformer-datasets):
+Download the datasets from [kaggle](https://www.kaggle.com/datasets/celsofranssa/xCoFormer_EMTC-datasets):
 ```
-kaggle datasets download celsofranssa/xcoformer-datasets -p resource/dataset/ --unzip
+kaggle datasets download celsofranssa/xCoFormer_EMTC-datasets -p resource/dataset/ --unzip
 ```
 After downloading the datasets from it should be placed inside the `resources/datasets/` folder as shown below:
 
 ```
-xCoFormer/
+xCoFormer_EMTC/
 |-- resources
 |   |-- datasets
-|   |   |-- java_v01
+|   |   |-- EURLEX57K
 |   |   |   |-- test.jsonl
 |   |   |   |-- train.jsonl
 |   |   |   `-- val.jsonl
-|   |   `-- python_v01
-|   |       |-- test.jsonl
-|   |       |-- train.jsonl
-|   |       `-- val.jsonl
+
 ```
 
 ### 3. Test Run
-The following bash command fits the BERT encoder over Java dataset using batch_size=128 and a single epoch.
+The following bash command fits the BERT encoder over EURLEX57K dataset using batch_size=64 and a single epoch.
 ```
-python main.py tasks=[fit] model=BERT data=JAVA data.batch_size=128 trainer.max_epochs=1
+python main.py tasks=[fit] model=BERT_TGT data=EURLEX57K data.batch_size=64 trainer.max_epochs=1
 ```
 If all goes well the following output should be produced:
 ```
@@ -63,10 +60,10 @@ LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
 
   | Name         | Type                          | Params
 ------------------------------------------------------------
-0 | desc_encoder | BERTEncoder                   | 109 M
-1 | code_encoder | BERTEncoder                   | 109 M
-2 | loss_fn      | NPairLoss                     | 0     
-3 | mrr          | MRRMetric                     | 0     
+0 | text_encoder  | BERTEncoder                   | 109 M
+1 | label_encoder | BERTEncoder                   | 109 M
+2 | loss          | NPairLoss                     | 0     
+3 | mrr           | MRRMetric                     | 0     
 ------------------------------------------------------------
 91.0 M    Trainable params
 
