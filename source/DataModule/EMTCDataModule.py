@@ -5,6 +5,8 @@ from tqdm import tqdm
 
 from source.Dataset.EvalDataset import EvalDataset
 from source.Dataset.FitDataset import FitDataset
+from source.Dataset.LabelDataset import LabelDataset
+from source.Dataset.TextDataset import TextDataset
 
 
 class EMTCDataModule(pl.LightningDataModule):
@@ -46,20 +48,18 @@ class EMTCDataModule(pl.LightningDataModule):
             )
 
         if stage == 'test' or stage is "predict":
-            self.text_dataset = EvalDataset(
+            self.text_dataset = TextDataset(
                 samples=self.samples,
                 ids_path=self.params.dir + f"fold_{self.fold}/test.pkl",
                 tokenizer=self.text_tokenizer,
-                max_length=self.params.text_max_length,
-                modality="text"
+                max_length=self.params.text_max_length
             )
 
-            self.label_dataset = EvalDataset(
+            self.label_dataset = LabelDataset(
                 samples=self.samples,
                 ids_path=self.params.dir + f"fold_{self.fold}/test.pkl",
                 tokenizer=self.label_tokenizer,
-                max_length=self.params.label_max_length,
-                modality="label"
+                max_length=self.params.label_max_length
             )
 
     def train_dataloader(self):

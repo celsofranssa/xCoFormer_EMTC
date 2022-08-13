@@ -1,11 +1,11 @@
-import json
 import pickle
 from pathlib import Path
+
 import nmslib
-import numpy as np
 import pandas as pd
 import torch
 from omegaconf import OmegaConf
+from ranx import Qrels, Run, evaluate
 from tqdm import tqdm
 
 
@@ -15,95 +15,53 @@ class EvalHelper:
         self.relevance_map = self._load_relevance_map()
         self.labels_cls = self._load_labels_cls()
         self.texts_cls = self._load_texts_cls()
+        self.metrics = self._get_metrics()
+
+    def _get_metrics(self):
+        metrics = []
+        for metric in self.params.eval.metrics:
+            for threshold in self.params.eval.thresholds:
+                metrics.append(f"{metric}@{threshold}")
+        return metrics
 
     def _load_relevance_map(self):
         with open(f"{self.params.data.dir}relevance_map.pkl", "rb") as relevances_file:
-            return pickle.load(relevances_file)
+            data = pickle.load(relevances_file)
+        relevance_map = {}
+        for text_idx, labels_ids in data.items():
+            d = {}
+            for label_idx in labels_ids:
+                d[f"label_{label_idx}"] = 1.0
+            relevance_map[f"text_{text_idx}"] = d
+        return relevance_map
 
     def _load_labels_cls(self):
-        with open(f"{self.params.data.dir}labels_cls.pkl", "rb") as labels_cls_file:
-            return pickle.load(labels_cls_file)
+        with open(f"{self.params.data.dir}label_cls.pkl", "rb") as label_cls_file:
+            return pickle.load(label_cls_file)
 
     def _load_texts_cls(self):
-        with open(f"{self.params.data.dir}texts_cls.pkl", "rb") as texts_cls_file:
-            return pickle.load(texts_cls_file)
+        with open(f"{self.params.data.dir}text_cls.pkl", "rb") as text_cls_file:
+            return pickle.load(text_cls_file)
 
-    def mrr_at_k(self, positions, k, num_samples):
-        """
-        Evaluates the MMR considering only the positions up to k.
-        :param positions:
-        :param k:
-        :param num_samples:
-        :return:
-        """
-        # positions_at_k = [p for p in positions if p <= k]
-        positions_at_k = [p if p <= k else 0 for p in positions]
-        rrank = 0.0
-        for pos in positions_at_k:
-            if pos != 0:
-                rrank += 1.0 / pos
-
-        return rrank / num_samples
-
-    def mrr(self, ranking):
-        """
-        Evaluates the MMR considering only the positions up to k.
-        :param positions:
-        :param num_samples:
-        :return:
-        """
-        return np.mean(ranking)
-
-    def recall_at_k(self, positions, k, num_samples):
-        """
-        Evaluates the Recall considering only the positions up to k
-        :param positions:
-        :param k:
-        :param num_samples:
-        :return:
-        """
-        return 1.0 * sum(i <= k for i in positions) / num_samples
-
-    def checkpoint_stats(self, stats):
-        """
-        Checkpoints stats on disk.
-        :param stats: dataframe
-        """
-        stats.to_csv(
-            self.params.stat.dir + self.params.model.name + "_" + self.params.data.name + ".stat",
-            sep='\t', index=False, header=True)
-
-    def checkpoint_ranking(self, ranking):
-        ranking_path = f"{self.params.ranking.dir}" \
-                       f"{self.params.model.name}_" \
-                       f"{self.params.data.name}.rnk"
-        with open(ranking_path, "wb") as ranking_file:
-            pickle.dump(ranking, ranking_file)
-
-
-    def load_predictions(self, fold):
+    def _load_predictions(self, fold):
 
         predictions_paths = sorted(
             Path(f"{self.params.prediction.dir}fold_{fold}/").glob("*.prd")
         )
 
-        # for path in tqdm(predictions_paths, desc="Loading predictions"):
-        #     prediction = torch.load(path)
-
-
         text_predictions = []
         label_predictions = []
         for path in tqdm(predictions_paths, desc="Loading predictions"):
-            text_predictions.extend(  # only eval over test split
+            text_predictions.extend(  # only text prediction
                 filter(lambda prediction: prediction["modality"] == "text", torch.load(path))
             )
-            label_predictions.extend(  # only eval over test split
+            label_predictions.extend(  # only label prediction
                 filter(lambda prediction: prediction["modality"] == "label", torch.load(path))
             )
 
         return text_predictions, label_predictions
 
-    def init_index(self, label_predictions):
+    def init_index(self, label_predictions, cls):
         M = 30
         efC = 100
         num_threads = 4
@@ -112,88 +70,62 @@ class EvalHelper:
         # initialize a new index, using a HNSW index on Cosine Similarity
         index = nmslib.init(method='hnsw', space='cosinesimil')
 
-        for prediction in tqdm(label_predictions, desc="Indexing"):
-            index.addDataPoint(id=prediction["idx"], data=prediction["rpr"])
+        for prediction in tqdm(label_predictions, desc="Adding data to index"):
+            label_idx = prediction["idx"]
+            if cls in self.labels_cls[label_idx]:
+                index.addDataPoint(id=label_idx, data=prediction["rpr"])
 
         index.createIndex(index_time_params)
         return index
 
-
-
-    def retrieve(self, index, text_predictions, k):
+    def retrieve(self, index, text_predictions, cls, num_nearest_neighbors):
         # retrieve
         ranking = {}
         for prediction in tqdm(text_predictions, desc="Searching"):
             text_idx = prediction["idx"]
-            retrieved_ids, _ = index.knnQuery(prediction["rpr"], k=k)
-            retrieved_ids = retrieved_ids.tolist()
-            ranking[text_idx] = self._get_relevant_rank(text_idx, retrieved_ids)
+            if cls in self.texts_cls[text_idx]:
+                retrieved_ids, distances = index.knnQuery(prediction["rpr"], k=num_nearest_neighbors)
+                for label_idx, distance in zip(retrieved_ids, distances):
+                    if f"text_{text_idx}" not in ranking:
+                        ranking[f"text_{text_idx}"] = {}
+                    ranking[f"text_{text_idx}"][f"label_{label_idx}"] = 1.0 / (distance + 1e-9)
 
         return ranking
 
-    def _get_relevant_rank(self, text_idx, retrieved_ids):
-        for position, label_idx in enumerate(retrieved_ids):
-            if label_idx in self.relevance_map[text_idx]:
-                return position+1
-        return 1e9
-
-    def get_ranking(self, text_predictions, label_predictions, num_nearest_neighbors):
+    def _get_ranking(self, text_predictions, label_predictions, cls, num_nearest_neighbors):
         # index data
-        index = self.init_index(label_predictions)
+        index = self.init_index(label_predictions, cls)
 
         # retrieve
-        return self.retrieve(index, text_predictions, k=num_nearest_neighbors)
-
+        return self.retrieve(index, text_predictions, cls, num_nearest_neighbors)
 
     def perform_eval(self):
-        rankings = {}
-        thresholds = [1, 5, 10]
-        label_cls = ["all", "full", "few", "tail"]
-        stats = []
-
-        for fold in self.params.data.folds:
+        results = []
+        for fold_id in self.params.data.folds:
             print(
-                f"Evaluating {self.params.model.name} over {self.params.data.name} (fold {fold}) with fowling params\n"
+                f"Evaluating {self.params.model.name} over {self.params.data.name} (fold {fold_id}) with fowling params\n"
                 f"{OmegaConf.to_yaml(self.params)}\n")
 
-            all_text_predictions, all_label_predictions = self.load_predictions(fold)
+            text_predictions, label_predictions = self._load_predictions(fold_id)
 
-            for cls in label_cls:
-                stat = {}
-                label_predictions = self.filter_label_predictions(all_label_predictions, cls)
-                text_predictions = self.filter_text_predictions(all_text_predictions, cls)
-                ranking = self.get_ranking(text_predictions, label_predictions, num_nearest_neighbors=thresholds[-1])
-                stat["fold"] = fold
-                stat["cls"] = cls
-                for k in thresholds:
-                    stat[f"MRR@{k}"] = self.mrr_at_k(ranking.values(), k, len(ranking))
-                    stat[f"RCL@{k}"] = self.recall_at_k(ranking.values(), k, len(ranking))
-                stats.append(stat)
+            for cls in self.params.eval.label_cls:
+                ranking = self._get_ranking(text_predictions, label_predictions, cls=cls,
+                                            num_nearest_neighbors=self.params.eval.thresholds[-1])
+                filtered_dictionary = {key: value for key, value in self.relevance_map.items() if key in ranking.keys()}
+                qrels = Qrels(filtered_dictionary, name=cls)
+                run = Run(ranking, name=cls)
+                result = evaluate(qrels, run, self.metrics, threads=12)
+                result["fold"] = fold_id
+                result["cls"] = cls
+                results.append(result)
 
+        self._checkpoint_results(results)
 
-
-        self.checkpoint_stats(
-            pd.DataFrame(
-                stats,
-                columns=["fold", "cls", "MRR@1", "MRR@5", "MRR@10", "RCL@1", "RCL@5", "RCL@10"]
-            ).sort_values(by=["cls"])
-        )
-        self.checkpoint_ranking(rankings)
-
-    def filter_label_predictions(self, label_predictions, label_cls):
-        if label_cls == "all":
-            return label_predictions
-        return filter(
-            lambda prediction:
-            label_cls == self.labels_cls[prediction["idx"]],
-            label_predictions
-        )
-    def filter_text_predictions(self, text_predictions, label_cls):
-        if label_cls == "all":
-            return text_predictions
-        return filter(
-            lambda prediction:
-            label_cls in self.texts_cls[prediction["idx"]],
-            text_predictions
-        )
-
+    def _checkpoint_results(self, results):
+        """
+        Checkpoints stats on disk.
+        :param stats: dataframe
+        """
+        pd.DataFrame(results).to_csv(
+            self.params.result.dir + self.params.model.name + "_" + self.params.data.name + ".rts",
+            sep='\t', index=False, header=True)

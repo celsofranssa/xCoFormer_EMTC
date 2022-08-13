@@ -37,3 +37,8 @@ loss:
   _target_: source.loss.NPairsLoss.NPairsLoss
   params:
     name: N-Pair-Loss
+
+metric:
+  relevance_map:
+    dir: ${data.dir}
+    name: relevance_map

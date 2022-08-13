@@ -40,10 +40,12 @@ class FitDataset(Dataset):
 
     def _encode(self, sample):
         return {
+            "text_idx": sample["text_idx"],
             "text": torch.tensor(
                 self.text_tokenizer.encode(text=sample["text"], max_length=self.text_max_length, padding="max_length",
                                            truncation=True)
             ),
+            "label_idx": sample["label_idx"],
             "label": torch.tensor(
                 self.label_tokenizer.encode(text=sample["label"], max_length=self.label_max_length, padding="max_length",
                                             truncation=True)

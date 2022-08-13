@@ -1,11 +1,16 @@
+import pickle
 import torch
-from torchmetrics import Metric
-
+from torchmetrics import Metric, RetrievalMRR
 
 class MRRMetric(Metric):
-    def __init__(self):
-        super().__init__()
-        self.add_state("mrrs", default=[])
+    def __init__(self, params):
+        super(MRRMetric, self).__init__()
+        self.retrieval_mrr = RetrievalMRR()
+        self._load_relevance_map(f"{params.relevance_map.dir}relevance_map.pkl")
+
+    def _load_relevance_map(self, relevance_map_path):
+        with open(relevance_map_path, "rb") as relevance_map_file:
+            self.relevance_map = pickle.load(relevance_map_file)
 
     def similarities(self, x1, x2):
         """
@@ -20,11 +25,17 @@ class MRRMetric(Metric):
         x2 = x2 / torch.norm(x2, dim=1, p=2, keepdim=True)
         return torch.matmul(x1, x2.t())
 
-    def update(self, r1, r2):
-        distances = 1 - self.similarities(r1, r2)
-        correct_elements = torch.unsqueeze(torch.diag(distances), dim=-1)
-        batch_ranks = torch.sum(distances < correct_elements, dim=-1) + 1.0
-        self.mrrs.append(torch.mean(1.0 / batch_ranks))
+    def flatten(self, tensor):
+        return torch.flatten(tensor)
+
+    def update(self, text_idx, text_rpr, label_idx, label_rpr):
+        pairs = torch.cartesian_prod(text_idx, label_idx)
+        target = torch.tensor([y.item() in self.relevance_map[x.item()] for x, y in pairs])
+        scores = self.flatten(
+            self.similarities(text_rpr, label_rpr)
+        )
+        indexes = text_idx.repeat_interleave(text_idx.shape[0])
+        self.retrieval_mrr.update(scores, target, indexes)
 
     def compute(self):
-        return torch.mean(torch.tensor(self.mrrs))
+        return self.retrieval_mrr.compute()

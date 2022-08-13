@@ -21,7 +21,7 @@ class EMTCModel(LightningModule):
         self.loss = instantiate(hparams.loss)
 
         # metric
-        self.mrr = MRRMetric()
+        self.mrr = MRRMetric(hparams.metric)
 
     def forward(self, text, label):
         text_repr = self.text_encoder(text)
@@ -39,9 +39,9 @@ class EMTCModel(LightningModule):
         return train_loss
 
     def validation_step(self, batch, batch_idx):
-        text, label = batch["text"], batch["label"]
+        text_idx, text, label_idx, label = batch["text_idx"], batch["text"], batch["label_idx"], batch["label"]
         text_repr, label_repr = self(text, label)
-        self.log("val_MRR", self.mrr(text_repr, label_repr), prog_bar=True)
+        self.log("val_MRR", self.mrr(text_idx, text_repr, label_idx, label_repr), prog_bar=True)
 
     def validation_epoch_end(self, outs):
         self.mrr.compute()

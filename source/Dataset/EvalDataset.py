@@ -2,6 +2,7 @@ import pickle
 
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 
 class EvalDataset(Dataset):
@@ -10,7 +11,7 @@ class EvalDataset(Dataset):
 
     def __init__(self, samples, ids_path, tokenizer, max_length, modality):
         super(EvalDataset, self).__init__()
-        self._filter_samples(
+        self._filter_and_reshape_samples(
             samples,
             self._load_ids(ids_path)
         )
@@ -18,12 +19,28 @@ class EvalDataset(Dataset):
         self.max_length = max_length
         self.modality = modality
 
-    def _filter_samples(self, samples, ids):
-        self.samples = filter(
-            lambda sample:
-            sample["idx"] in ids,
-            samples
-        )
+    def _filter_and_reshape_samples(self, samples, ids):
+        self.samples = []
+
+        for sample in tqdm(samples, desc="Reshaping samples"):
+            if sample["idx"] in ids:
+                for label_idx, label in zip(sample["label_ids"], sample["labels"]):
+                    self.samples.append({
+                        "idx": sample["idx"],
+                        "text_idx": sample["text_idx"],
+                        "text": sample["text"],
+                        "label_idx": label_idx,
+                        "label": label
+                    })
+
+    def _filter_and_reshape_samples(self, samples, ids):
+        texts, labels = {}, {}
+
+        for sample in tqdm(samples, desc="Reshaping samples"):
+            if sample["idx"] in ids:
+                texts[sample["text_idx"]]=sample["text"]
+                for label_idx, label in zip(sample["label_ids"], sample["labels"]):
+                    labels[label_idx]=label
 
 
     def _load_ids(self, ids_path):

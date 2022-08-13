@@ -7,11 +7,11 @@ tasks: [ "fit" ]
 
 
 trainer:
-  max_epochs: 32
+  max_epochs: 16
   gpus: 1
-  patience: 15
+  patience: 7
   min_delta: 0.03
-  precision: 16
+  precision: 32
   fast_dev_run: False
   progress_bar_refresh_rate: 1
 
@@ -33,12 +33,13 @@ prediction:
   fold: 0
   write_interval: batch
 
-tsne:
-  dir: resource/tsne/${model.name}_${data.name}/
-  fold_id: 0
+result:
+  dir: resource/result/
 
-stat:
-  dir: resource/stat/
+eval:
+  metrics: ["mrr","ndcg","precision","recall"]
+  thresholds: [1,5,10]
+  label_cls: ["all", "full", "few", "tail"]
 
 
 
