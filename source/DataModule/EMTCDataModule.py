@@ -74,7 +74,7 @@ class EMTCDataModule(pl.LightningDataModule):
         return DataLoader(
             self.val_dataset,
             batch_size=self.params.batch_size,
-            shuffle=False,
+            shuffle=True,
             num_workers=self.params.num_workers
         )
 

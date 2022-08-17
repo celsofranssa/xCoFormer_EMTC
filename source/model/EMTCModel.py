@@ -29,9 +29,9 @@ class EMTCModel(LightningModule):
         return text_repr, label_repr
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
-        text, label = batch["text"], batch["label"]
+        text_idx, text, label = batch["text_idx"], batch["text"], batch["label"]
         text_repr, label_repr = self(text, label)
-        train_loss = self.loss(text_repr, label_repr)
+        train_loss = self.loss(text_idx, text_repr, label_repr)
 
         # log training loss
         self.log('train_LOSS', train_loss)

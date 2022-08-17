@@ -1,0 +1,10 @@
+name: Eurlex-4k
+dir: resource/dataset/Eurlex-4k/
+
+folds: [0,1,2,3,4]
+
+text_max_length: 128
+label_max_length: 16
+
+batch_size: 64
+num_workers: 12

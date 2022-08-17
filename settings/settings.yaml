@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - model: BERT_TGT
-  - data: EURLEX57K
+  - data: Wiki10-31k
 
 tasks: [ "fit" ]
 
@@ -39,6 +39,7 @@ result:
 eval:
   metrics: ["mrr","ndcg","precision","recall"]
   thresholds: [1,5,10]
+  num_nearest_neighbors: 10
   label_cls: ["all", "full", "few", "tail"]
 
 

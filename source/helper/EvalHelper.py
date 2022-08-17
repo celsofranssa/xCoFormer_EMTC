@@ -62,13 +62,14 @@ class EvalHelper:
         return text_predictions, label_predictions
 
     def init_index(self, label_predictions, cls):
-        M = 30
-        efC = 100
-        num_threads = 4
-        index_time_params = {'M': M, 'indexThreadQty': num_threads, 'efConstruction': efC, 'post': 0}
+        M = 256
+        efC = 2048
+        num_threads = 12
+        index_time_params = {'M': M, 'indexThreadQty': num_threads, 'efConstruction': efC, 'post': 2}
 
         # initialize a new index, using a HNSW index on Cosine Similarity
-        index = nmslib.init(method='hnsw', space='cosinesimil')
+        index = nmslib.init(method='hnsw', space='l2')
+
 
         for prediction in tqdm(label_predictions, desc="Adding data to index"):
             label_idx = prediction["idx"]
@@ -81,6 +82,7 @@ class EvalHelper:
     def retrieve(self, index, text_predictions, cls, num_nearest_neighbors):
         # retrieve
         ranking = {}
+        index.setQueryTimeParams({'efSearch':2048})
         for prediction in tqdm(text_predictions, desc="Searching"):
             text_idx = prediction["idx"]
             if cls in self.texts_cls[text_idx]:
@@ -101,6 +103,7 @@ class EvalHelper:
 
     def perform_eval(self):
         results = []
+        rankings = []
         for fold_id in self.params.data.folds:
             print(
                 f"Evaluating {self.params.model.name} over {self.params.data.name} (fold {fold_id}) with fowling params\n"
@@ -110,16 +113,26 @@ class EvalHelper:
 
             for cls in self.params.eval.label_cls:
                 ranking = self._get_ranking(text_predictions, label_predictions, cls=cls,
-                                            num_nearest_neighbors=self.params.eval.thresholds[-1])
-                filtered_dictionary = {key: value for key, value in self.relevance_map.items() if key in ranking.keys()}
-                qrels = Qrels(filtered_dictionary, name=cls)
-                run = Run(ranking, name=cls)
-                result = evaluate(qrels, run, self.metrics, threads=12)
+                                            num_nearest_neighbors=self.params.eval.num_nearest_neighbors)
+                # filtered_dictionary = {key: value for key, value in self.relevance_map.items() if key in ranking.keys()}
+                # qrels = Qrels(filtered_dictionary, name=cls)
+                # run = Run(ranking, name=cls)
+                # result = evaluate(qrels, run, self.metrics, threads=12)
+                result = evaluate(
+                    Qrels(
+                        {key: value for key, value in self.relevance_map.items() if key in ranking.keys()}
+                    ),
+                    Run(ranking),
+                    self.metrics
+                )
                 result["fold"] = fold_id
                 result["cls"] = cls
+
                 results.append(result)
+                rankings.append(ranking)
 
         self._checkpoint_results(results)
+        self._checkpoint_rankings(rankings)
 
     def _checkpoint_results(self, results):
         """
@@ -129,3 +142,10 @@ class EvalHelper:
         pd.DataFrame(results).to_csv(
             self.params.result.dir + self.params.model.name + "_" + self.params.data.name + ".rts",
             sep='\t', index=False, header=True)
+
+    def _checkpoint_rankings(self, rankings):
+        with open(
+            self.params.ranking.dir + self.params.model.name + "_" + self.params.data.name + ".rnk",
+            "wb") as rankings_file:
+            pickle.dump(rankings, rankings_file)
+

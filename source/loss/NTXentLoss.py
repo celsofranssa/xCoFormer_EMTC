@@ -6,12 +6,12 @@ class NTXentLoss(nn.Module):
 
     def __init__(self, params):
         super(NTXentLoss, self).__init__()
-        self.miner = miners.MultiSimilarityMiner(epsilon=params.epsilon)
-        self.criterion = losses.NTXentLoss(temperature=params.temperature)
+        self.miner = miners.MultiSimilarityMiner(epsilon=params.miner.epsilon)
+        self.criterion = losses.NTXentLoss(temperature=params.criterion.temperature)
 
     def forward(self, cls_ids, text_rpr, label_rpr):
         """
-        Computes the cross entropy loss between pred_cls and true_cls.
+        Computes the NTXentLoss.
         """
         cls = torch.cat([cls_ids,cls_ids])
         rpr = torch.cat([text_rpr,label_rpr])

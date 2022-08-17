@@ -1,13 +1,15 @@
 import pickle
 import torch
 from ranx import Qrels, Run, evaluate
-from torchmetrics import Metric, RetrievalMRR
+from torchmetrics import Metric
 
 class MRRMetric(Metric):
     def __init__(self, params):
         super(MRRMetric, self).__init__()
-        self.run={}
+        self.params=params
+        self.run = {}
         self.relevance_map = self._load_relevance_map()
+
 
     def _load_relevance_map(self):
         with open(f"{self.params.relevance_map.dir}relevance_map.pkl", "rb") as relevances_file:
@@ -33,15 +35,21 @@ class MRRMetric(Metric):
         x2 = x2 / torch.norm(x2, dim=1, p=2, keepdim=True)
         return torch.matmul(x1, x2.t())
 
-
     def update(self, text_ids, text_rpr, label_ids, label_rpr):
+
         similarities = self.similarities(text_rpr, label_rpr)
         for row, text_idx in enumerate(text_ids.tolist()):
+            if f"text_{text_idx}" not in self.run:
+                self.run[f"text_{text_idx}"]={}
             for col, label_idx in enumerate(label_ids.tolist()):
-                self.run[f"text_{text_idx}"]={"label_{label_idx}": similarities[row][col].item()}
-
+                self.run[f"text_{text_idx}"][f"label_{label_idx}"] = similarities[row][col].item()
 
     def compute(self):
-        qrels = Qrels(self.relevance_map)
-        run = Run(self.run)
-        return evaluate(qrels, run, ["mrr"])
+        return evaluate(
+            Qrels({key: value for key, value in self.relevance_map.items() if key in self.run.keys()}),
+            Run(self.run),
+            ["mrr"]
+        )
+
+    def reset(self) -> None:
+        self.run = {}
