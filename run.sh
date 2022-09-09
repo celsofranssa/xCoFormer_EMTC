@@ -4,8 +4,8 @@ export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer_EMTC/
 
 # BERT_LC_TGT EURLEX57K
 python main.py \
-  tasks=[fit,predict,eval] \
+  tasks=[fit] \
   model=BERT_TGT \
-  data=Eurlex-4k \
+  data=EURLEX57K \
   data.batch_size=64 \
   data.folds=[0]

@@ -1,15 +1,17 @@
 import pickle
-import torch
+
+import nmslib
 from ranx import Qrels, Run, evaluate
 from torchmetrics import Metric
+
 
 class MRRMetric(Metric):
     def __init__(self, params):
         super(MRRMetric, self).__init__()
-        self.params=params
-        self.run = {}
+        self.params = params
         self.relevance_map = self._load_relevance_map()
-
+        self.texts = []
+        self.labels = []
 
     def _load_relevance_map(self):
         with open(f"{self.params.relevance_map.dir}relevance_map.pkl", "rb") as relevances_file:
@@ -22,34 +24,57 @@ class MRRMetric(Metric):
             relevance_map[f"text_{text_idx}"] = d
         return relevance_map
 
-    def similarities(self, x1, x2):
-        """
-        Calculates the cosine similarity matrix for every pair (i, j),
-        where i is an embedding from x1 and j is another embedding from x2.
+    def update(self, text_idx, text_rpr, labels_ids, labels_rpr):
 
-        :param x1: a tensors with shape [batch_size, hidden_size].
-        :param x2: a tensors with shape [batch_size, hidden_size].
-        :return: the cosine similarity matrix with shape [batch_size, batch_size].
-        """
-        x1 = x1 / torch.norm(x1, dim=1, p=2, keepdim=True)
-        x2 = x2 / torch.norm(x2, dim=1, p=2, keepdim=True)
-        return torch.matmul(x1, x2.t())
+        for text_idx, text_rpr, labels_ids, labels_rpr in zip(
+                text_idx.tolist(),
+                text_rpr.tolist(),
+                labels_ids.tolist(),
+                labels_rpr.tolist()):
 
-    def update(self, text_ids, text_rpr, label_ids, label_rpr):
+            self.texts.append({"text_idx": text_idx, "text_rpr": text_rpr})
+            for label_idx, label_rpr in zip(labels_ids, labels_rpr):
+                if label_idx >= 0: # PAD labels have idx = -1
+                    self.labels.append({"label_idx": self.label_idx, "label_rpr": label_rpr})
 
-        similarities = self.similarities(text_rpr, label_rpr)
-        for row, text_idx in enumerate(text_ids.tolist()):
-            if f"text_{text_idx}" not in self.run:
-                self.run[f"text_{text_idx}"]={}
-            for col, label_idx in enumerate(label_ids.tolist()):
-                self.run[f"text_{text_idx}"][f"label_{label_idx}"] = similarities[row][col].item()
+    def init_index(self):
+
+        # initialize a new index, using a HNSW index on l2 space
+        index = nmslib.init(method='hnsw', space='l2')
+
+        for label in self.labels:
+            index.addDataPoint(id=label["label_idx"], data=label["label_rpr"])
+
+        index.createIndex(self.params.eval.index)
+        return index
+
+    def retrieve(self, index, num_nearest_neighbors):
+        ranking = {}
+        index.setQueryTimeParams({'efSearch': 2048})
+        for text in self.texts:
+            text_idx = text["text_idx"]
+            retrieved_ids, distances = index.knnQuery(text["text_rpr"], k=num_nearest_neighbors)
+            for label_idx, distance in zip(retrieved_ids, distances):
+                if f"text_{text_idx}" not in ranking:
+                    ranking[f"text_{text_idx}"] = {}
+                ranking[f"text_{text_idx}"][f"label_{label_idx}"] = 1.0 / (distance + 1e-9)
+
+        return ranking
 
     def compute(self):
+        # index
+        index = self.init_index()
+
+        # retrive
+        ranking = self.retrieve(index, num_nearest_neighbors=self.params.eval.num_nearest_neighbors)
+
+        # eval
         return evaluate(
-            Qrels({key: value for key, value in self.relevance_map.items() if key in self.run.keys()}),
-            Run(self.run),
+            Qrels({key: value for key, value in self.relevance_map.items() if key in ranking.keys()}),
+            Run(ranking),
             ["mrr"]
         )
 
     def reset(self) -> None:
-        self.run = {}
+        self.texts = []
+        self.labels = []

@@ -12,7 +12,7 @@ label_encoder:
   architecture: bert-base-uncased
   output_attentions: False
   pooling:
-    _target_: source.pooling.NoPooling.NoPooling
+    _target_: source.pooling.LabelMaxPooling.LabelMaxPooling
 
 hidden_size: 768
 
@@ -38,7 +38,8 @@ loss:
   params:
     name: NTXentLoss
     miner:
-      epsilon: 0.1
+      relevance_map:
+        dir: ${data.dir}
     criterion:
       temperature: 0.07
 

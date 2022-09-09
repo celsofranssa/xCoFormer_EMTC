@@ -17,13 +17,6 @@ class EvalHelper:
         self.texts_cls = self._load_texts_cls()
         self.metrics = self._get_metrics()
 
-    def _get_metrics(self):
-        metrics = []
-        for metric in self.params.eval.metrics:
-            for threshold in self.params.eval.thresholds:
-                metrics.append(f"{metric}@{threshold}")
-        return metrics
-
     def _load_relevance_map(self):
         with open(f"{self.params.data.dir}relevance_map.pkl", "rb") as relevances_file:
             data = pickle.load(relevances_file)
@@ -34,6 +27,13 @@ class EvalHelper:
                 d[f"label_{label_idx}"] = 1.0
             relevance_map[f"text_{text_idx}"] = d
         return relevance_map
+
+    def _get_metrics(self):
+        metrics = []
+        for metric in self.params.eval.metrics:
+            for threshold in self.params.eval.thresholds:
+                metrics.append(f"{metric}@{threshold}")
+        return metrics
 
     def _load_labels_cls(self):
         with open(f"{self.params.data.dir}label_cls.pkl", "rb") as label_cls_file:
@@ -51,38 +51,42 @@ class EvalHelper:
 
         text_predictions = []
         label_predictions = []
+
+
         for path in tqdm(predictions_paths, desc="Loading predictions"):
-            text_predictions.extend(  # only text prediction
-                filter(lambda prediction: prediction["modality"] == "text", torch.load(path))
-            )
-            label_predictions.extend(  # only label prediction
-                filter(lambda prediction: prediction["modality"] == "label", torch.load(path))
-            )
+            for prediction in torch.load(path):
+                text_idx = prediction["text_idx"]
+                text_predictions.append({
+                    "text_idx": text_idx,
+                    "text": prediction["text"]
+                })
+
+                for label_idx, label_rpr in zip(prediction["labels_idx"], prediction["labels_rpr"]):
+                    label_predictions.append({
+                        "label_idx": label_idx,
+                        "label_rpr": label_rpr
+                    })
+
 
         return text_predictions, label_predictions
 
     def init_index(self, label_predictions, cls):
-        M = 256
-        efC = 2048
-        num_threads = 12
-        index_time_params = {'M': M, 'indexThreadQty': num_threads, 'efConstruction': efC, 'post': 2}
 
         # initialize a new index, using a HNSW index on Cosine Similarity
         index = nmslib.init(method='hnsw', space='l2')
-
 
         for prediction in tqdm(label_predictions, desc="Adding data to index"):
             label_idx = prediction["idx"]
             if cls in self.labels_cls[label_idx]:
                 index.addDataPoint(id=label_idx, data=prediction["rpr"])
 
-        index.createIndex(index_time_params)
+        index.createIndex(self.params.eval.index)
         return index
 
     def retrieve(self, index, text_predictions, cls, num_nearest_neighbors):
         # retrieve
         ranking = {}
-        index.setQueryTimeParams({'efSearch':2048})
+        index.setQueryTimeParams({'efSearch': 2048})
         for prediction in tqdm(text_predictions, desc="Searching"):
             text_idx = prediction["idx"]
             if cls in self.texts_cls[text_idx]:
@@ -145,7 +149,6 @@ class EvalHelper:
 
     def _checkpoint_rankings(self, rankings):
         with open(
-            self.params.ranking.dir + self.params.model.name + "_" + self.params.data.name + ".rnk",
-            "wb") as rankings_file:
+                self.params.ranking.dir + self.params.model.name + "_" + self.params.data.name + ".rnk",
+                "wb") as rankings_file:
             pickle.dump(rankings, rankings_file)
-

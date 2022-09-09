@@ -8,10 +8,9 @@ from torch import Tensor
 
 class PredictionWriter(BasePredictionWriter):
 
-
     def __init__(self, params):
         super(PredictionWriter, self).__init__(params.write_interval)
-        self.params=params
+        self.params = params
         self.checkpoint_dir = f"{self.params.dir}fold_{self.params.fold}/"
         Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
@@ -25,14 +24,16 @@ class PredictionWriter(BasePredictionWriter):
     ):
         predictions = []
 
-        for idx, modality, rpr in zip(
-                prediction["idx"].tolist(),
-                prediction["modality"],
-                prediction["rpr"].tolist()):
+        for text_idx, text_rpr, labels_ids, labels_rpr in zip(
+                prediction["text_idx"].tolist(),
+                prediction["text_rpr"].tolist(),
+                prediction["labels_ids"].tolist(),
+                prediction["labels_rpr"].tolist(), ):
             predictions.append({
-                "idx": idx,
-                "modality": modality,
-                "rpr": rpr
+                "text_idx": text_idx,
+                "text_rpr": text_rpr,
+                "labels_ids": labels_ids,
+                "labels_rpr": labels_rpr
             })
 
         self._checkpoint(predictions, dataloader_idx, batch_idx)
@@ -42,4 +43,3 @@ class PredictionWriter(BasePredictionWriter):
             predictions,
             f"{self.checkpoint_dir}{dataloader_idx}_{batch_idx}.prd"
         )
-

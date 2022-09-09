@@ -2,7 +2,7 @@ import torch
 from hydra.utils import instantiate
 from pytorch_lightning.core.lightning import LightningModule
 
-from source.metric.MRRMetric import MRRMetric
+from source.metric.mMRRMetric import MRRMetric
 
 
 class EMTCModel(LightningModule):
@@ -23,15 +23,18 @@ class EMTCModel(LightningModule):
         # metric
         self.mrr = MRRMetric(hparams.metric)
 
-    def forward(self, text, label):
-        text_repr = self.text_encoder(text)
-        label_repr = self.label_encoder(label)
-        return text_repr, label_repr
+    def forward(self, text, labels):
+        text_rpr = self.text_encoder(text)
+        labels_rpr = torch.reshape(
+            self.label_encoder(labels),
+            (self.hparams.batch_size * self.hparams.max_labels, self.hparams.max_lenght)
+        )
+        return text_rpr, labels_rpr
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
-        text_idx, text, label = batch["text_idx"], batch["text"], batch["label"]
-        text_repr, label_repr = self(text, label)
-        train_loss = self.loss(text_idx, text_repr, label_repr)
+        text_idx, text, labels_ids, labels = batch["text_idx"], batch["text"], batch["labels_ids"], batch["labels"]
+        text_rpr, labels_rpr = self(text, labels)
+        train_loss = self.loss(text_idx, text_rpr, labels_ids, labels_rpr)
 
         # log training loss
         self.log('train_LOSS', train_loss)
@@ -39,40 +42,23 @@ class EMTCModel(LightningModule):
         return train_loss
 
     def validation_step(self, batch, batch_idx):
-        text_idx, text, label_idx, label = batch["text_idx"], batch["text"], batch["label_idx"], batch["label"]
-        text_repr, label_repr = self(text, label)
-        self.log("val_MRR", self.mrr(text_idx, text_repr, label_idx, label_repr), prog_bar=True)
+        text_idx, text, labels_ids, labels = batch["text_idx"], batch["text"], batch["labels_ids"], batch["labels"]
+        text_rpr, labels_rpr = self(text, labels)
+        self.log("val_MRR", self.mrr(text_idx, text_rpr, labels_ids, labels_rpr), prog_bar=True)
 
     def validation_epoch_end(self, outs):
         self.mrr.compute()
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        idx, sample, modality = batch["idx"], batch["sample"], batch["modality"]
-        prediction = {}
+        text_idx, text, labels_ids, labels = batch["text_idx"], batch["text"], batch["labels_ids"], batch["labels"]
+        text_rpr, labels_rpr = self(text, labels)
+        return {
+            "text_idx": text_idx,
+            "text_rpr": text_rpr,
+            "labels_ids": labels_ids,
+            "labels_rpr": labels_rpr
+        }
 
-        if modality[0] == "text":
-            prediction = {
-                "idx": idx,
-                "modality": modality,
-                "rpr": self.text_encoder(sample)
-            }
-        elif modality[0] == "label":
-            prediction = {
-                "idx": idx,
-                "modality": modality,
-                "rpr": self.label_encoder(sample)
-            }
-
-        return prediction
-
-    def test_step(self, batch, batch_idx):
-        pass
-
-    def get_text_encoder(self):
-        return self.text_encoder
-
-    def get_label_encoder(self):
-        return self.text_encoder
 
     def configure_optimizers(self):
         if self.hparams.tag_training:
