@@ -2,10 +2,10 @@
 source ~/projects/venvs/xCoFormer_EMTC/bin/activate
 export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer_EMTC/
 
-# BERT_LC_TGT EURLEX57K
+# BERT_TGT Wiki10-31k
 python main.py \
-  tasks=[fit] \
+  tasks=[predict,eval] \
   model=BERT_TGT \
-  data=EURLEX57K \
+  data=Wiki10-31k \
   data.batch_size=64 \
   data.folds=[0]

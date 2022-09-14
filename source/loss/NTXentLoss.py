@@ -13,10 +13,10 @@ class NTXentLoss(nn.Module):
         self.criterion = losses.NTXentLoss(temperature=params.criterion.temperature)
 
     def forward(self, text_idx, text_rpr, label_idx, label_rpr):
+
         """
         Computes the NTXentLoss.
         """
-        miner_outs = self.miner.mine(text_idx, torch.flatten(label_idx))
-
+        miner_outs = self.miner.mine(text_ids=text_idx, label_ids=torch.flatten(label_idx))
         return self.criterion(text_rpr, None, miner_outs, label_rpr, None)
 

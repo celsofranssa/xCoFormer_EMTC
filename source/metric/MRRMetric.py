@@ -1,13 +1,14 @@
 import pickle
-
 import nmslib
+import torch
+from omegaconf import OmegaConf
 from ranx import Qrels, Run, evaluate
 from torchmetrics import Metric
 
 
 class MRRMetric(Metric):
     def __init__(self, params):
-        super(MRRMetric, self).__init__()
+        super(MRRMetric, self).__init__(compute_on_cpu=True)
         self.params = params
         self.relevance_map = self._load_relevance_map()
         self.texts = []
@@ -26,16 +27,21 @@ class MRRMetric(Metric):
 
     def update(self, text_idx, text_rpr, labels_ids, labels_rpr):
 
-        for text_idx, text_rpr, labels_ids, labels_rpr in zip(
+        for text_idx, text_rpr in zip(
                 text_idx.tolist(),
-                text_rpr.tolist(),
-                labels_ids.tolist(),
-                labels_rpr.tolist()):
-
+                text_rpr.tolist()):
             self.texts.append({"text_idx": text_idx, "text_rpr": text_rpr})
-            for label_idx, label_rpr in zip(labels_ids, labels_rpr):
-                if label_idx >= 0: # PAD labels have idx = -1
-                    self.labels.append({"label_idx": self.label_idx, "label_rpr": label_rpr})
+
+        # print(f"\nlabels_ids ({labels_ids.shape}):\n {labels_ids}\n")
+        # print(f"\nlabels_rpr ({labels_rpr.shape}):\n {labels_rpr}\n")
+
+        for label_idx, label_rpr in zip(
+                torch.flatten(labels_ids).tolist(),
+                labels_rpr.tolist()):
+            # print(f"\nlabel_idx:\n {label_idx}\n")
+            # print(f"\nlabel_rpr:\n {label_rpr}\n")
+            if label_idx >= 0:  # PAD labels have idx = -1
+                self.labels.append({"label_idx": label_idx, "label_rpr": label_rpr})
 
     def init_index(self):
 
@@ -45,7 +51,13 @@ class MRRMetric(Metric):
         for label in self.labels:
             index.addDataPoint(id=label["label_idx"], data=label["label_rpr"])
 
-        index.createIndex(self.params.eval.index)
+        index.createIndex(
+            index_params=OmegaConf.to_container(self.params.index),
+            print_progress=False
+        )
+
+
+
         return index
 
     def retrieve(self, index, num_nearest_neighbors):
@@ -66,14 +78,19 @@ class MRRMetric(Metric):
         index = self.init_index()
 
         # retrive
-        ranking = self.retrieve(index, num_nearest_neighbors=self.params.eval.num_nearest_neighbors)
+        ranking = self.retrieve(index, num_nearest_neighbors=self.params.num_nearest_neighbors)
+
+        # print(f"\n\nranking ({len(ranking)}):\n{ranking}\n")
 
         # eval
-        return evaluate(
+        m = evaluate(
             Qrels({key: value for key, value in self.relevance_map.items() if key in ranking.keys()}),
             Run(ranking),
             ["mrr"]
         )
+
+        # print(f"MRR: {m}")
+        return m
 
     def reset(self) -> None:
         self.texts = []

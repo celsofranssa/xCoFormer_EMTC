@@ -52,19 +52,19 @@ class EvalHelper:
         text_predictions = []
         label_predictions = []
 
-
         for path in tqdm(predictions_paths, desc="Loading predictions"):
             for prediction in torch.load(path):
-                text_idx = prediction["text_idx"]
-                text_predictions.append({
-                    "text_idx": text_idx,
-                    "text": prediction["text"]
-                })
 
-                for label_idx, label_rpr in zip(prediction["labels_idx"], prediction["labels_rpr"]):
+                if prediction["modality"] == "text":
+                    text_predictions.append({
+                        "text_idx": prediction["text_idx"],
+                        "text_rpr": prediction["text_rpr"]
+                    })
+
+                elif prediction["modality"] == "label" and prediction["label_idx"] > 0:
                     label_predictions.append({
-                        "label_idx": label_idx,
-                        "label_rpr": label_rpr
+                        "label_idx": prediction["label_idx"],
+                        "label_rpr": prediction["label_rpr"]
                     })
 
 
@@ -76,11 +76,13 @@ class EvalHelper:
         index = nmslib.init(method='hnsw', space='l2')
 
         for prediction in tqdm(label_predictions, desc="Adding data to index"):
-            label_idx = prediction["idx"]
-            if cls in self.labels_cls[label_idx]:
-                index.addDataPoint(id=label_idx, data=prediction["rpr"])
+            if cls in self.labels_cls[prediction["label_idx"]]:
+                index.addDataPoint(id=prediction["label_idx"], data=prediction["label_rpr"])
 
-        index.createIndex(self.params.eval.index)
+        index.createIndex(
+            index_params=OmegaConf.to_container(self.params.eval.index),
+            print_progress=False
+        )
         return index
 
     def retrieve(self, index, text_predictions, cls, num_nearest_neighbors):
@@ -88,9 +90,9 @@ class EvalHelper:
         ranking = {}
         index.setQueryTimeParams({'efSearch': 2048})
         for prediction in tqdm(text_predictions, desc="Searching"):
-            text_idx = prediction["idx"]
+            text_idx = prediction["text_idx"]
             if cls in self.texts_cls[text_idx]:
-                retrieved_ids, distances = index.knnQuery(prediction["rpr"], k=num_nearest_neighbors)
+                retrieved_ids, distances = index.knnQuery(prediction["text_rpr"], k=num_nearest_neighbors)
                 for label_idx, distance in zip(retrieved_ids, distances):
                     if f"text_{text_idx}" not in ranking:
                         ranking[f"text_{text_idx}"] = {}

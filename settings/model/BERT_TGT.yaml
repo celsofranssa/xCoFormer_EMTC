@@ -1,20 +1,25 @@
 name: BERT_TGT
 
 text_encoder:
-  _target_: source.encoder.BertEncoder.BertEncoder
+  _target_: source.encoder.text.BertEncoder.BertEncoder
   architecture: bert-base-uncased
   output_attentions: False
   pooling:
     _target_: source.pooling.NoPooling.NoPooling
 
 label_encoder:
-  _target_: source.encoder.BertEncoder.BertEncoder
+  _target_: source.encoder.label.BertEncoder.BertEncoder
   architecture: bert-base-uncased
   output_attentions: False
   pooling:
     _target_: source.pooling.LabelMaxPooling.LabelMaxPooling
 
 hidden_size: 768
+text_max_length: ${data.text_max_length}
+labels_max_length: ${data.labels_max_length}
+max_labels: ${data.max_labels}
+
+batch_size: 64
 
 text_tokenizer:
   architecture: ${model.text_encoder.architecture}
@@ -46,4 +51,6 @@ loss:
 metric:
   relevance_map:
     dir: ${data.dir}
-    name: relevance_map
+  num_nearest_neighbors: 10
+  max_labels: ${data.max_labels}
+  index: ${eval.index}

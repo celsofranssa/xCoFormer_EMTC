@@ -11,7 +11,7 @@ class RelevanceMiner(BaseMiner):
         with open(f"{params.relevance_map.dir}relevance_map.pkl", "rb") as relevance_map_file:
             self.relevance_map = pickle.load(relevance_map_file)
 
-    def mine(self, text_ids, _, label_ids, __):
+    def mine(self, text_ids, label_ids):
         a1, p, a2, n = [], [], [], []
         for i, text_idx in enumerate(text_ids.tolist()):
             for j, label_idx in enumerate(label_ids.tolist()):
@@ -23,7 +23,7 @@ class RelevanceMiner(BaseMiner):
                         a2.append(i)
                         n.append(j)
 
-        return torch.tensor(a1), torch.tensor(p), torch.tensor(a2), torch.tensor(n)
+        return torch.tensor(a1, device=text_ids.device), torch.tensor(p, device=text_ids.device), torch.tensor(a2, device=text_ids.device), torch.tensor(n, device=text_ids.device)
 
     def output_assertion(self, output):
         pass

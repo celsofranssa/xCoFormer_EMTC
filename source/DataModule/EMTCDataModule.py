@@ -1,12 +1,9 @@
 import pickle
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 
-from source.Dataset.EvalDataset import EvalDataset
-from source.Dataset.FitDataset import FitDataset
-from source.Dataset.LabelDataset import LabelDataset
-from source.Dataset.TextDataset import TextDataset
+from source.Dataset.EMTCDataset import EMTCDataset
+
 
 
 class EMTCDataModule(pl.LightningDataModule):
@@ -29,37 +26,37 @@ class EMTCDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
 
         if stage == 'fit':
-            self.train_dataset = FitDataset(
+            # samples, ids_path, text_tokenizer, label_tokenizer, text_max_length, labels_max_length,
+            #                  max_labels
+            self.train_dataset = EMTCDataset(
                 samples=self.samples,
                 ids_path=self.params.dir + f"fold_{self.fold}/train.pkl",
                 text_tokenizer=self.text_tokenizer,
                 label_tokenizer=self.label_tokenizer,
                 text_max_length=self.params.text_max_length,
-                label_max_length=self.params.label_max_length
+                labels_max_length=self.params.labels_max_length,
+                max_labels=self.params.max_labels
             )
 
-            self.val_dataset = FitDataset(
+            self.val_dataset = EMTCDataset(
                 samples=self.samples,
                 ids_path=self.params.dir + f"fold_{self.fold}/val.pkl",
                 text_tokenizer=self.text_tokenizer,
                 label_tokenizer=self.label_tokenizer,
                 text_max_length=self.params.text_max_length,
-                label_max_length=self.params.label_max_length
+                labels_max_length=self.params.labels_max_length,
+                max_labels=self.params.max_labels
             )
 
-        if stage == 'test' or stage is "predict":
-            self.text_dataset = TextDataset(
+        if stage == 'test' or stage == "predict":
+            self.predict_dataset = EMTCDataset(
                 samples=self.samples,
                 ids_path=self.params.dir + f"fold_{self.fold}/test.pkl",
-                tokenizer=self.text_tokenizer,
-                max_length=self.params.text_max_length
-            )
-
-            self.label_dataset = LabelDataset(
-                samples=self.samples,
-                ids_path=self.params.dir + f"fold_{self.fold}/test.pkl",
-                tokenizer=self.label_tokenizer,
-                max_length=self.params.label_max_length
+                text_tokenizer=self.text_tokenizer,
+                label_tokenizer=self.label_tokenizer,
+                text_max_length=self.params.text_max_length,
+                labels_max_length=self.params.labels_max_length,
+                max_labels=self.params.max_labels
             )
 
     def train_dataloader(self):
@@ -79,7 +76,8 @@ class EMTCDataModule(pl.LightningDataModule):
         )
 
     def predict_dataloader(self):
-        return [
-            DataLoader(self.text_dataset, batch_size=self.params.batch_size, num_workers=self.params.num_workers),
-            DataLoader(self.label_dataset, batch_size=self.params.batch_size, num_workers=self.params.num_workers)
-        ]
+        return DataLoader(
+            self.predict_dataset,
+            batch_size=self.params.batch_size,
+            num_workers=self.params.num_workers
+        )

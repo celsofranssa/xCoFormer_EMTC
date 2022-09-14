@@ -24,17 +24,31 @@ class PredictionWriter(BasePredictionWriter):
     ):
         predictions = []
 
-        for text_idx, text_rpr, labels_ids, labels_rpr in zip(
+        # print(f"\ntext_idx ({text_idx.shape}):\n {text_idx}\n")
+        # print(f"\ntext_rpr ({text_rpr.shape}):\n {text_rpr}\n")
+        # print(f"\nlabels_ids ({torch.flatten(labels_ids).shape}):\n {torch.flatten(labels_ids)}\n")
+        # print(f"\nlabels_rpr ({labels_rpr.shape}):\n {labels_rpr}\n")
+
+        for text_idx, text_rpr in zip(
                 prediction["text_idx"].tolist(),
-                prediction["text_rpr"].tolist(),
-                prediction["labels_ids"].tolist(),
-                prediction["labels_rpr"].tolist(), ):
+                prediction["text_rpr"].tolist()):
+
             predictions.append({
                 "text_idx": text_idx,
                 "text_rpr": text_rpr,
-                "labels_ids": labels_ids,
-                "labels_rpr": labels_rpr
+                "modality": "text"
             })
+
+        for label_idx, label_rpr in zip(
+                prediction["labels_ids"].tolist(),
+                prediction["labels_rpr"].tolist()):
+
+            if label_idx > 0:
+                predictions.append({
+                    "label_idx": label_idx,
+                    "label_rpr": label_rpr,
+                    "modality": "label"
+                })
 
         self._checkpoint(predictions, dataloader_idx, batch_idx)
 

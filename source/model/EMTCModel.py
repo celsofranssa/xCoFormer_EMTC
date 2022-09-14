@@ -2,7 +2,7 @@ import torch
 from hydra.utils import instantiate
 from pytorch_lightning.core.lightning import LightningModule
 
-from source.metric.mMRRMetric import MRRMetric
+from source.metric.MRRMetric import MRRMetric
 
 
 class EMTCModel(LightningModule):
@@ -23,17 +23,19 @@ class EMTCModel(LightningModule):
         # metric
         self.mrr = MRRMetric(hparams.metric)
 
-    def forward(self, text, labels):
+    def forward(self, text, labels, labels_mask):
         text_rpr = self.text_encoder(text)
         labels_rpr = torch.reshape(
-            self.label_encoder(labels),
-            (self.hparams.batch_size * self.hparams.max_labels, self.hparams.max_lenght)
+            self.label_encoder(labels, labels_mask),
+            (labels.shape[0] * self.hparams.max_labels, self.hparams.hidden_size)
         )
         return text_rpr, labels_rpr
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
-        text_idx, text, labels_ids, labels = batch["text_idx"], batch["text"], batch["labels_ids"], batch["labels"]
-        text_rpr, labels_rpr = self(text, labels)
+        text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
+            "labels"], batch["labels_mask"]
+        text_rpr, labels_rpr = self(text, labels, labels_mask)
+
         train_loss = self.loss(text_idx, text_rpr, labels_ids, labels_rpr)
 
         # log training loss
@@ -42,23 +44,26 @@ class EMTCModel(LightningModule):
         return train_loss
 
     def validation_step(self, batch, batch_idx):
-        text_idx, text, labels_ids, labels = batch["text_idx"], batch["text"], batch["labels_ids"], batch["labels"]
-        text_rpr, labels_rpr = self(text, labels)
-        self.log("val_MRR", self.mrr(text_idx, text_rpr, labels_ids, labels_rpr), prog_bar=True)
+        text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
+            "labels"], batch["labels_mask"]
+        text_rpr, labels_rpr = self(text, labels, labels_mask)
+        self.mrr.update(text_idx, text_rpr, labels_ids, labels_rpr)
 
     def validation_epoch_end(self, outs):
-        self.mrr.compute()
+        self.log("val_MRR", self.mrr.compute(), prog_bar=True)
+        self.mrr.reset()
 
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        text_idx, text, labels_ids, labels = batch["text_idx"], batch["text"], batch["labels_ids"], batch["labels"]
-        text_rpr, labels_rpr = self(text, labels)
+        text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
+            "labels"], batch["labels_mask"]
+        text_rpr, labels_rpr = self(text, labels, labels_mask)
+
         return {
             "text_idx": text_idx,
             "text_rpr": text_rpr,
-            "labels_ids": labels_ids,
+            "labels_ids": torch.flatten(labels_ids),
             "labels_rpr": labels_rpr
         }
-
 
     def configure_optimizers(self):
         if self.hparams.tag_training:
@@ -76,7 +81,6 @@ class EMTCModel(LightningModule):
                                             eps=1e-08, weight_decay=self.hparams.weight_decay, amsgrad=True)
         # schedulers
         step_size_up = round(0.03 * self.trainer.estimated_stepping_batches)
-
 
         text_scheduler = torch.optim.lr_scheduler.CyclicLR(text_optimizer, mode='triangular2',
                                                            base_lr=self.hparams.base_lr,
@@ -99,7 +103,6 @@ class EMTCModel(LightningModule):
 
         # schedulers
         step_size_up = round(0.03 * self.num_training_steps)
-
 
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='triangular2',
                                                       base_lr=self.hparams.base_lr,
