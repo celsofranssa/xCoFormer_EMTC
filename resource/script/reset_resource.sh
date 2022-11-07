@@ -7,7 +7,7 @@ rm -r ranking/
 rm -r result/
 
 
-# criate dirs
+# create dirs
 mkdir log
 mkdir model_checkpoint
 mkdir prediction

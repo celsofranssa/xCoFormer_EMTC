@@ -5,7 +5,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from transformers import AutoTokenizer
 
 from source.DataModule.EMTCDataModule import EMTCDataModule
-from source.model.EMTCModel import EMTCModel
+from source.model.SiEMTCModel import SiEMTCModel
 
 
 class FitHelper:
@@ -36,12 +36,11 @@ class FitHelper:
             # datamodule
             datamodule = EMTCDataModule(
                 self.params.data,
-                text_tokenizer=self.get_tokenizer(self.params.model.text_tokenizer),
-                label_tokenizer=self.get_tokenizer(self.params.model.label_tokenizer),
+                self.get_tokenizer(self.params.model.tokenizer),
                 fold=fold)
 
             # model
-            model = EMTCModel(self.params.model)
+            model = SiEMTCModel(self.params.model)
 
             # Train the ⚡ model
             print(
@@ -78,10 +77,13 @@ class FitHelper:
         )
 
     def get_tokenizer(self, params):
-        return AutoTokenizer.from_pretrained(
+        tokenizer = AutoTokenizer.from_pretrained(
             params.architecture
         )
-
+        if "gpt" in params.architecture:
+            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+            params.pad = tokenizer.convert_tokens_to_ids("[PAD]")
+        return tokenizer
     def get_lr_monitor(self):
         return LearningRateMonitor(logging_interval='step')
 

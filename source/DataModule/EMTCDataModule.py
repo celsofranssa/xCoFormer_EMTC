@@ -26,8 +26,6 @@ class EMTCDataModule(pl.LightningDataModule):
     def setup(self, stage=None):
 
         if stage == 'fit':
-            # samples, ids_path, text_tokenizer, label_tokenizer, text_max_length, labels_max_length,
-            #                  max_labels
             self.train_dataset = EMTCDataset(
                 samples=self.samples,
                 ids_path=self.params.dir + f"fold_{self.fold}/train.pkl",

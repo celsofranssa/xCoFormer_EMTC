@@ -10,5 +10,5 @@ class NoPooling(LightningModule):
     def __init__(self):
         super(NoPooling, self).__init__()
 
-    def forward(self, attention_mask, encoder_outputs):
+    def forward(self, encoder_outputs, attention_mask=None):
         return encoder_outputs.pooler_output

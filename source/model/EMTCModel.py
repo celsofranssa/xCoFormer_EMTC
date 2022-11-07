@@ -3,6 +3,8 @@ from hydra.utils import instantiate
 from pytorch_lightning.core.lightning import LightningModule
 
 from source.metric.MRRMetric import MRRMetric
+from source.pooling.LabelMaxPooling import LabelMaxPooling
+from source.pooling.NoPooling import NoPooling
 
 
 class EMTCModel(LightningModule):
@@ -16,6 +18,7 @@ class EMTCModel(LightningModule):
         # encoders
         self.text_encoder = instantiate(hparams.text_encoder)
         self.label_encoder = instantiate(hparams.label_encoder)
+
 
         # loss function
         self.loss = instantiate(hparams.loss)
@@ -92,17 +95,24 @@ class EMTCModel(LightningModule):
                                                             cycle_momentum=False)
 
         return (
-            {"optimizer": text_optimizer, "lr_scheduler": text_scheduler, "frequency": self.hparams.text_frequency_opt},
-            {"optimizer": label_optimizer, "lr_scheduler": label_scheduler,
-             "frequency": self.hparams.label_frequency_opt},
+            {"optimizer": text_optimizer,
+             "lr_scheduler": {"scheduler": text_scheduler, "interval": "step", "name": "TEXT_SCHDLR"}},
+            {"optimizer": label_optimizer,
+             "lr_scheduler": {"scheduler": label_scheduler, "interval": "step", "name": "CODE_SCHDLR"}}
         )
+
+        # return (
+        #     {"optimizer": text_optimizer, "lr_scheduler": text_scheduler, "frequency": self.hparams.text_frequency_opt},
+        #     {"optimizer": label_optimizer, "lr_scheduler": label_scheduler,
+        #      "frequency": self.hparams.label_frequency_opt},
+        # )
 
     def _configure_std_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999),
                                       eps=1e-08, weight_decay=self.hparams.weight_decay, amsgrad=True)
 
         # schedulers
-        step_size_up = round(0.03 * self.num_training_steps)
+        step_size_up = round(0.03 * self.trainer.estimated_stepping_batches)
 
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='triangular2',
                                                       base_lr=self.hparams.base_lr,
@@ -110,12 +120,7 @@ class EMTCModel(LightningModule):
                                                       cycle_momentum=False)
 
         return (
-            {"optimizer": optimizer, "lr_scheduler": scheduler}
+            {"optimizer": optimizer,
+             "lr_scheduler": {"scheduler": scheduler, "interval": "step", "name": "SCHDLR"}},
         )
 
-    @property
-    def num_training_steps(self) -> int:
-        """Total training steps inferred from datamodule and number of epochs."""
-        steps_per_epochs = len(self.train_dataloader()) / self.trainer.accumulate_grad_batches
-        max_epochs = self.trainer.max_epochs
-        return steps_per_epochs * max_epochs

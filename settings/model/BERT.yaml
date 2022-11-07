@@ -1,4 +1,4 @@
-name: BERT_TGT
+name: BERT
 
 text_encoder:
   _target_: source.encoder.text.BertEncoder.BertEncoder
@@ -19,7 +19,7 @@ text_max_length: ${data.text_max_length}
 labels_max_length: ${data.labels_max_length}
 max_labels: ${data.max_labels}
 
-batch_size: 64
+batch_size: ${data.batch_size}
 
 text_tokenizer:
   architecture: ${model.text_encoder.architecture}
@@ -27,14 +27,14 @@ text_tokenizer:
 label_tokenizer:
   architecture: ${model.label_encoder.architecture}
 
-lr: 5e-5
-text_lr: 5e-5
-label_lr: 5e-5
+lr: 5e-6
+text_lr: 5e-6
+label_lr: 5e-6
 base_lr: 5e-7
-max_lr: 5e-4
+max_lr: 5e-5
 weight_decay: 1e-2
 
-tag_training: True
+tag_training: False
 text_frequency_opt: 1
 label_frequency_opt: 1
 

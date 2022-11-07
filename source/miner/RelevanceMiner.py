@@ -11,6 +11,7 @@ class RelevanceMiner(BaseMiner):
         with open(f"{params.relevance_map.dir}relevance_map.pkl", "rb") as relevance_map_file:
             self.relevance_map = pickle.load(relevance_map_file)
 
+
     def mine(self, text_ids, label_ids):
         a1, p, a2, n = [], [], [], []
         for i, text_idx in enumerate(text_ids.tolist()):
