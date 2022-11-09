@@ -4,11 +4,11 @@ from pytorch_lightning import loggers, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor, TQDMProgressBar
 from transformers import AutoTokenizer
 
-from source.DataModule.EMTCDataModule import EMTCDataModule
+from source.DataModule.SiEMTCDataModule import SiEMTCDataModule
 from source.model.SiEMTCModel import SiEMTCModel
 
 
-class FitHelper:
+class SiFitHelper:
 
     def __init__(self, params):
         self.params = params
@@ -34,7 +34,7 @@ class FitHelper:
             )
 
             # datamodule
-            datamodule = EMTCDataModule(
+            datamodule = SiEMTCDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.tokenizer),
                 fold=fold)
@@ -77,13 +77,10 @@ class FitHelper:
         )
 
     def get_tokenizer(self, params):
-        tokenizer = AutoTokenizer.from_pretrained(
+        return AutoTokenizer.from_pretrained(
             params.architecture
         )
-        if "gpt" in params.architecture:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            params.pad = tokenizer.convert_tokens_to_ids("[PAD]")
-        return tokenizer
+
     def get_lr_monitor(self):
         return LearningRateMonitor(logging_interval='step')
 

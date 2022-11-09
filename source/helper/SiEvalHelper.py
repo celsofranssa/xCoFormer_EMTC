@@ -9,7 +9,7 @@ from ranx import Qrels, Run, evaluate
 from tqdm import tqdm
 
 
-class EvalHelper:
+class SiEvalHelper:
     def __init__(self, params):
         self.params = params
         self.relevance_map = self._load_relevance_map()

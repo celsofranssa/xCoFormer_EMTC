@@ -1,13 +1,13 @@
 import torch
 from pytorch_lightning import LightningModule
-from transformers import BertModel
+from transformers import RobertaModel
 
-class BertEncoder(LightningModule):
+class RoBERTaEncoder(LightningModule):
     """Encodes the input as embeddings."""
 
     def __init__(self, architecture, output_attentions):
-        super(BertEncoder, self).__init__()
-        self.encoder = BertModel.from_pretrained(
+        super(RoBERTaEncoder, self).__init__()
+        self.encoder = RobertaModel.from_pretrained(
             architecture,
             output_attentions=output_attentions
         )
@@ -15,6 +15,6 @@ class BertEncoder(LightningModule):
     def forward(self, feature):
         return self.encoder(
             feature,
-            torch.where(feature > 0, 1, 0)
+            torch.where(feature != 1, 1, 0)
         )
 

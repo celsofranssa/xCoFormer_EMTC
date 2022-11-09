@@ -1,10 +1,10 @@
-name: SiBERT
+name: SiRoBERTa
 
 type: single
 
 encoder:
-  _target_: source.encoder.BertEncoder.BertEncoder
-  architecture: bert-base-uncased
+  _target_: source.encoder.RoBERTaEncoder.RoBERTaEncoder
+  architecture: roberta-base
   output_attentions: False
 
 hidden_size: 768
@@ -17,12 +17,11 @@ batch_size: ${data.batch_size}
 tokenizer:
   architecture: ${model.encoder.architecture}
 
-
-lr: 5e-6
-text_lr: 5e-6
-label_lr: 5e-6
-base_lr: 5e-7
-max_lr: 5e-5
+lr: 1e-6
+text_lr: 1e-6
+label_lr: 1e-6
+base_lr: 1e-7
+max_lr: 1e-5
 weight_decay: 1e-2
 
 loss:

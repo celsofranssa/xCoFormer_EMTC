@@ -2,12 +2,12 @@ from omegaconf import OmegaConf
 import pytorch_lightning as pl
 from transformers import AutoTokenizer
 
-from source.DataModule.EMTCDataModule import EMTCDataModule
+from source.DataModule.SiEMTCDataModule import SiEMTCDataModule
 from source.callback.PredictionWriter import PredictionWriter
-from source.model.SiEMTCModel import EMTCModel
+from source.model.SiEMTCModel import SiEMTCModel
 
 
-class PredictHelper:
+class SiPredictHelper:
     
     def __init__(self, params):
         self.params=params
@@ -15,13 +15,13 @@ class PredictHelper:
     def perform_predict(self):
         for fold in self.params.data.folds:
             # data
-            dm = EMTCDataModule(
+            dm = SiEMTCDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.tokenizer),
                 fold=fold)
 
             # model
-            model = EMTCModel.load_from_checkpoint(
+            model = SiEMTCModel.load_from_checkpoint(
                 checkpoint_path=f"{self.params.model_checkpoint.dir}{self.params.model.name}_{self.params.data.name}_{fold}.ckpt"
             )
 
@@ -45,10 +45,6 @@ class PredictHelper:
             )
 
     def get_tokenizer(self, params):
-        tokenizer = AutoTokenizer.from_pretrained(
+        return AutoTokenizer.from_pretrained(
             params.architecture
         )
-        if "gpt" in params.architecture:
-            tokenizer.add_special_tokens({'pad_token': '[PAD]'})
-            params.pad = tokenizer.convert_tokens_to_ids("[PAD]")
-        return tokenizer

@@ -1,13 +1,13 @@
-name: SiBERT
+name: Si_LRG_BERT
 
 type: single
 
 encoder:
   _target_: source.encoder.BertEncoder.BertEncoder
-  architecture: bert-base-uncased
+  architecture: bert-large-cased
   output_attentions: False
 
-hidden_size: 768
+hidden_size: 1024
 text_max_length: ${data.text_max_length}
 labels_max_length: ${data.labels_max_length}
 max_labels: ${data.max_labels}
