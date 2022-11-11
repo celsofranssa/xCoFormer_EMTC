@@ -17,11 +17,10 @@ batch_size: ${data.batch_size}
 tokenizer:
   architecture: ${model.encoder.architecture}
 
-lr: 1e-6
-text_lr: 1e-6
-label_lr: 1e-6
-base_lr: 1e-7
-max_lr: 1e-5
+
+lr: 1e-4
+base_lr: 1e-6
+max_lr: 1e-4
 weight_decay: 1e-2
 
 loss:

@@ -18,7 +18,11 @@ class SiEMTCDataModule(pl.LightningDataModule):
 
     def prepare_data(self):
         self.samples = []
-        with open(self.params.dir + f"samples.pkl", "rb") as dataset_file:
+        if self.params.pseudo_labels:
+            samples_path = f"{self.params.dir}samples_pseudo_labels.pkl"
+        else:
+            samples_path = f"{self.params.dir}samples.pkl"
+        with open(samples_path, "rb") as dataset_file:
             self.samples = pickle.load(dataset_file)
 
     def setup(self, stage=None):
@@ -30,7 +34,8 @@ class SiEMTCDataModule(pl.LightningDataModule):
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
                 labels_max_length=self.params.labels_max_length,
-                max_labels=self.params.max_labels
+                max_labels=self.params.max_labels,
+                pseudo_labels=self.params.pseudo_labels
             )
 
             self.val_dataset = SiEMTCDataset(
@@ -39,7 +44,8 @@ class SiEMTCDataModule(pl.LightningDataModule):
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
                 labels_max_length=self.params.labels_max_length,
-                max_labels=self.params.max_labels
+                max_labels=self.params.max_labels,
+                pseudo_labels=self.params.pseudo_labels
             )
 
         if stage == 'test' or stage == "predict":
@@ -49,7 +55,8 @@ class SiEMTCDataModule(pl.LightningDataModule):
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
                 labels_max_length=self.params.labels_max_length,
-                max_labels=self.params.max_labels
+                max_labels=self.params.max_labels,
+                pseudo_labels=self.params.pseudo_labels
             )
 
     def train_dataloader(self):

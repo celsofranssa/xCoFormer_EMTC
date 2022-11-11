@@ -7,16 +7,6 @@ python main.py \
   tasks=[fit,predict,eval] \
   trainer.precision=16 \
   model=SiBERT \
-  data=Eurlex-4k \
+  data=Eurlex-PSD-4k \
   data.batch_size=64 \
   data.folds=[0]
-
-## BERT Wiki10-31k
-#python main.py \
-#  tasks=[fit,predict,eval] \
-#  trainer.precision=16 \
-#  model=Si_LRG_BERT \
-#  data=Eurlex-4k \
-#  data.batch_size=32 \
-#  data.folds=[0]
-
