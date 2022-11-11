@@ -1,6 +1,7 @@
 import torch
 from hydra.utils import instantiate
 from pytorch_lightning.core.lightning import LightningModule
+from transformers import get_constant_schedule_with_warmup, get_scheduler
 
 from source.metric.MRRMetric import MRRMetric
 from source.pooling.LabelMaxPooling import LabelMaxPooling
@@ -96,6 +97,13 @@ class SiEMTCModel(LightningModule):
 
         # schedulers
         step_size_up = round(0.07 * self.trainer.estimated_stepping_batches)
+
+        # scheduler = get_scheduler(
+        #     "linear",
+        #     optimizer=optimizer,
+        #     num_warmup_steps=0,
+        #     num_training_steps=self.trainer.estimated_stepping_batches
+        # )
 
         scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='triangular2',
                                                       base_lr=self.hparams.base_lr,

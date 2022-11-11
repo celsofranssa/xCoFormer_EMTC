@@ -18,11 +18,9 @@ tokenizer:
   architecture: ${model.encoder.architecture}
 
 
-lr: 5e-6
-text_lr: 5e-6
-label_lr: 5e-6
-base_lr: 5e-7
-max_lr: 5e-5
+lr: 1e-4
+base_lr: 1e-6
+max_lr: 1e-4
 weight_decay: 1e-2
 
 loss:
