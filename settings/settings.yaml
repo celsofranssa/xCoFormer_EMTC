@@ -40,7 +40,7 @@ eval:
   metrics: ["mrr","ndcg","precision","recall"]
   thresholds: [1,5,10]
   num_nearest_neighbors: 10
-  label_cls: ["all", "full", "few", "tail"]
+  label_cls: ["all", "head", "tail"]
   index:
     M: 128
     indexThreadQty: ${data.num_workers}

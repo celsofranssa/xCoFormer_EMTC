@@ -62,7 +62,7 @@ class MRRMetric(Metric):
 
     def retrieve(self, index, num_nearest_neighbors):
         ranking = {}
-        index.setQueryTimeParams({'efSearch': 2048})
+        # index.setQueryTimeParams({'efSearch': 2048})
         for text in self.texts:
             text_idx = text["text_idx"]
             retrieved_ids, distances = index.knnQuery(text["text_rpr"], k=num_nearest_neighbors)

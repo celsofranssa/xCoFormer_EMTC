@@ -1,9 +1,9 @@
-name: EURLEX57K
-dir: resource/dataset/Eurlex57k/
+name: Amazon-670k
+dir: resource/dataset/Amazon-670k/
 
 folds: [0,1,2,3,4]
 
-text_max_length: 128
+text_max_length: 256
 labels_max_length: 128
 max_labels: 32
 

@@ -85,6 +85,21 @@ class EvalHelper:
         )
         return index
 
+    # def retrieve(self, index, text_predictions, cls, num_nearest_neighbors):
+    #     # retrieve
+    #     ranking = {}
+    #     index.setQueryTimeParams({'efSearch': 2048})
+    #     for prediction in tqdm(text_predictions, desc="Searching"):
+    #         text_idx = prediction["text_idx"]
+    #         if cls in self.texts_cls[text_idx]:
+    #             retrieved_ids, distances = index.knnQuery(prediction["text_rpr"], k=num_nearest_neighbors)
+    #             for label_idx, distance in zip(retrieved_ids, distances):
+    #                 if f"text_{text_idx}" not in ranking:
+    #                     ranking[f"text_{text_idx}"] = {}
+    #                 ranking[f"text_{text_idx}"][f"label_{label_idx}"] = 1.0 / (distance + 1e-9)
+    #
+    #     return ranking
+
     def retrieve(self, index, text_predictions, cls, num_nearest_neighbors):
         # retrieve
         ranking = {}
@@ -96,7 +111,12 @@ class EvalHelper:
                 for label_idx, distance in zip(retrieved_ids, distances):
                     if f"text_{text_idx}" not in ranking:
                         ranking[f"text_{text_idx}"] = {}
-                    ranking[f"text_{text_idx}"][f"label_{label_idx}"] = 1.0 / (distance + 1e-9)
+                    score = 1.0 / (distance + 1e-9)
+                    if f"label_{label_idx}" in ranking[f"text_{text_idx}"]:
+                        if score > ranking[f"text_{text_idx}"][f"label_{label_idx}"]:
+                            ranking[f"text_{text_idx}"][f"label_{label_idx}"] = score
+                    else:
+                        ranking[f"text_{text_idx}"][f"label_{label_idx}"] = score
 
         return ranking
 

@@ -1,4 +1,6 @@
+import math
 import pickle
+import random
 
 import torch
 from torch.utils.data import Dataset
@@ -9,15 +11,15 @@ class SiEMTCDataset(Dataset):
     """Fit Dataset.
     """
 
-    def __init__(self, samples, ids_path, tokenizer, text_max_length, labels_max_length,
-                 max_labels, pseudo_labels):
+    def __init__(self, samples, pseudo_labels, ids_path, tokenizer, text_max_length, labels_max_length,
+                 max_labels):
         super(SiEMTCDataset, self).__init__()
         self.samples = samples
+        self.pseudo_labels = pseudo_labels
         self.tokenizer = tokenizer
         self.text_max_length = text_max_length
         self.labels_max_length = labels_max_length
         self.max_labels = max_labels
-        self.pseudo_labels = pseudo_labels
         self._load_ids(ids_path)
 
     def _load_ids(self, ids_path):
@@ -57,19 +59,21 @@ class SiEMTCDataset(Dataset):
 
         return token_ids, labels_mask
 
-    def _encode(self, sample):
-        if self.pseudo_labels:
-            # print(f"\n\nL: {len(sample['labels'])}")
-            # print(f"PL: {len(sample['pseudo_labels'])}")
-            sample["labels"].extend(sample["pseudo_labels"])
-            # print(f"L+ PL: {len(sample['labels'])}")
-            # print(f"T(L+ PL): {len(sample['labels'][:self.max_labels])}\n")
-            token_ids, labels_mask = self._encode_labels(sample["labels"][:self.max_labels-1])
-        else:
-            token_ids, labels_mask = self._encode_labels(sample["labels"][:self.max_labels-1])
+    def _get_pseudo_labels(self, labels_ids):
+        pseudo_labels = []
+        for label_idx in labels_ids:
+            pseudo_labels.extend(
+                random.choices([label for (label, _) in self.pseudo_labels[label_idx]],
+                               [weight for (_, weight) in self.pseudo_labels[label_idx]],
+                               k=math.ceil((self.max_labels - len(labels_ids))/len(labels_ids))
+                               )
+            )
+        return pseudo_labels
 
-        # print(f"\ntoken_ids ({len(token_ids)})\n: {token_ids}")
-        # print(f"\nlabels_mask ({len(labels_mask)})\n: {labels_mask}")
+    def _encode(self, sample):
+        sample["labels"].extend(self._get_pseudo_labels(sample["labels_ids"]))
+
+        token_ids, labels_mask = self._encode_labels(sample["labels"][:self.max_labels - 1])
 
         return {
             "text_idx": sample["text_idx"],
@@ -83,9 +87,7 @@ class SiEMTCDataset(Dataset):
             "labels": torch.tensor(token_ids),
             "labels_mask": torch.tensor(labels_mask)
         }
-        # if a["labels_mask"].shape[0] > 32:
-        #     print(sample["idx"])
-        # return a
+
 
     def __len__(self):
         return len(self.ids)
