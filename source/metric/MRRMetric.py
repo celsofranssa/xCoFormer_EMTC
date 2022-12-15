@@ -25,23 +25,17 @@ class MRRMetric(Metric):
             relevance_map[f"text_{text_idx}"] = d
         return relevance_map
 
-    def update(self, text_idx, text_rpr, labels_ids, labels_rpr):
+    def update(self, texts_ids, texts_rpr, labels_ids, labels_rpr):
 
         for text_idx, text_rpr in zip(
-                text_idx.tolist(),
-                text_rpr.tolist()):
+                texts_ids.tolist(),
+                texts_rpr.tolist()):
             self.texts.append({"text_idx": text_idx, "text_rpr": text_rpr})
 
-        # print(f"\nlabels_ids ({labels_ids.shape}):\n {labels_ids}\n")
-        # print(f"\nlabels_rpr ({labels_rpr.shape}):\n {labels_rpr}\n")
-
         for label_idx, label_rpr in zip(
-                torch.flatten(labels_ids).tolist(),
+                labels_ids.tolist(),
                 labels_rpr.tolist()):
-            # print(f"\nlabel_idx:\n {label_idx}\n")
-            # print(f"\nlabel_rpr:\n {label_rpr}\n")
-            if label_idx >= 0:  # PAD labels have idx = -1
-                self.labels.append({"label_idx": label_idx, "label_rpr": label_rpr})
+            self.labels.append({"label_idx": label_idx, "label_rpr": label_rpr})
 
     def init_index(self):
 
@@ -55,8 +49,6 @@ class MRRMetric(Metric):
             index_params=OmegaConf.to_container(self.params.index),
             print_progress=False
         )
-
-
 
         return index
 

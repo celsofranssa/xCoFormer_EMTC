@@ -4,10 +4,7 @@ dir: resource/dataset/Wiki10-31k/
 folds: [0,1,2,3,4]
 
 text_max_length: 256
-labels_max_length: 64
+labels_max_length: 128
+batch_size: 64
 max_labels: 32
-
-pseudo_labels: False
-
-batch_size: 32
 num_workers: 12

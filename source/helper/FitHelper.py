@@ -4,8 +4,8 @@ from pytorch_lightning import loggers, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor, TQDMProgressBar
 from transformers import AutoTokenizer
 
-from source.DataModule.EMTCDataModule import EMTCDataModule
-from source.model.EMTCModel import EMTCModel
+from source.DataModule.XMTCDataModule import XMTCDataModule
+from source.model.XMTCModel import XMTCModel
 
 
 class FitHelper:
@@ -34,14 +34,13 @@ class FitHelper:
             )
 
             # datamodule
-            datamodule = EMTCDataModule(
+            datamodule = XMTCDataModule(
                 self.params.data,
-                text_tokenizer=self.get_tokenizer(self.params.model.text_tokenizer),
-                label_tokenizer=self.get_tokenizer(self.params.model.label_tokenizer),
+                self.get_tokenizer(self.params.model.tokenizer),
                 fold=fold)
 
             # model
-            model = EMTCModel(self.params.model)
+            model = XMTCModel(self.params.model)
 
             # Train the ⚡ model
             print(

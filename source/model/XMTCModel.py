@@ -1,0 +1,105 @@
+import torch
+from hydra.utils import instantiate
+from pytorch_lightning.core.lightning import LightningModule
+from transformers import get_constant_schedule_with_warmup, get_scheduler
+
+from source.metric.MRRMetric import MRRMetric
+from source.pooling.AveragePooling import AveragePooling
+from source.pooling.LabelMaxPooling import LabelMaxPooling
+from source.pooling.NoPooling import NoPooling
+
+
+class XMTCModel(LightningModule):
+    """Encodes the text and label into an same space of embeddings."""
+
+    def __init__(self, hparams):
+
+        super(XMTCModel, self).__init__()
+        self.save_hyperparameters(hparams)
+
+        # encoders
+        self.encoder = instantiate(hparams.encoder)
+
+        # pooling
+        self.text_pool = NoPooling()
+        self.label_pool = AveragePooling()
+
+        # loss function
+        self.loss = instantiate(hparams.loss)
+
+        # metric
+        self.mrr = MRRMetric(hparams.metric)
+
+    def forward(self, text, label):
+        return self.encoder(text), self.encoder(label)
+
+    def training_step(self, batch, batch_idx, optimizer_idx=0):
+        text_idx, text, label_idx, label = batch["text_idx"], batch["text"], batch["label_idx"], batch["label"]
+        text_rpr, label_rpr = self.text_pool(self.encoder(text)), self.label_pool(self.encoder(label), torch.where(label > 0, 1, 0))
+        train_loss = self.loss(text_idx, text_rpr, label_idx, label_rpr)
+
+        # log training loss
+        self.log('train_LOSS', train_loss)
+
+        return train_loss
+
+    def validation_step(self, batch, batch_idx):
+        text_idx, text, label_idx, label = batch["text_idx"], batch["text"], batch["label_idx"], batch["label"]
+        text_rpr, label_rpr = self.text_pool(self.encoder(text)), self.label_pool(self.encoder(label), torch.where(label > 0, 1, 0))
+        self.mrr.update(text_idx, text_rpr, label_idx, label_rpr)
+
+    def validation_epoch_end(self, outs):
+        self.log("val_MRR", self.mrr.compute(), prog_bar=True)
+        self.mrr.reset()
+
+    def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        if dataloader_idx == 0:
+            return self._predict_text(batch, batch_idx, dataloader_idx)
+        elif dataloader_idx == 1:
+            return self._predict_label(batch, batch_idx, dataloader_idx)
+        else:
+            raise Exception(f"The modality is expected to be text or label. ")
+
+    def _predict_text(self, batch, batch_idx, dataloader_idx):
+        text_idx, text = batch["text_idx"], batch["text"],
+        text_rpr = self.text_pool(self.encoder(text))
+
+        return {
+            "text_idx": text_idx,
+            "text_rpr": text_rpr,
+            "modality": "text"
+        }
+
+    def _predict_label(self, batch, batch_idx, dataloader_idx):
+        label_idx, label = batch["label_idx"], batch["label"]
+        label_rpr = self.label_pool(self.encoder(label),torch.where(label > 0, 1, 0))
+
+        return {
+            "label_idx": label_idx,
+            "label_rpr": label_rpr,
+            "modality": "label"
+        }
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.AdamW(self.encoder.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999),
+                                      eps=1e-08, weight_decay=self.hparams.weight_decay, amsgrad=True)
+
+        # schedulers
+        step_size_up = round(0.07 * self.trainer.estimated_stepping_batches)
+
+        # scheduler = get_scheduler(
+        #     "linear",
+        #     optimizer=optimizer,
+        #     num_warmup_steps=0,
+        #     num_training_steps=self.trainer.estimated_stepping_batches
+        # )
+
+        scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, mode='triangular2',
+                                                      base_lr=self.hparams.base_lr,
+                                                      max_lr=self.hparams.max_lr, step_size_up=step_size_up,
+                                                      cycle_momentum=False)
+
+        return (
+            {"optimizer": optimizer,
+             "lr_scheduler": {"scheduler": scheduler, "interval": "step", "name": "SCHDLR"}},
+        )

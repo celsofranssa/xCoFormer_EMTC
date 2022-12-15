@@ -1,18 +1,8 @@
 name: BERT
-
-text_encoder:
-  _target_: source.encoder.text.BertEncoder.BertEncoder
+encoder:
+  _target_: source.encoder.BertEncoder.BertEncoder
   architecture: bert-base-uncased
   output_attentions: False
-  pooling:
-    _target_: source.pooling.NoPooling.NoPooling
-
-label_encoder:
-  _target_: source.encoder.label.BertEncoder.BertEncoder
-  architecture: bert-base-uncased
-  output_attentions: False
-  pooling:
-    _target_: source.pooling.LabelMaxPooling.LabelMaxPooling
 
 hidden_size: 768
 text_max_length: ${data.text_max_length}
@@ -21,22 +11,14 @@ max_labels: ${data.max_labels}
 
 batch_size: ${data.batch_size}
 
-text_tokenizer:
-  architecture: ${model.text_encoder.architecture}
+tokenizer:
+  architecture: ${model.encoder.architecture}
 
-label_tokenizer:
-  architecture: ${model.label_encoder.architecture}
 
-lr: 5e-6
-text_lr: 5e-6
-label_lr: 5e-6
-base_lr: 5e-7
-max_lr: 5e-5
+lr: 1e-4
+base_lr: 1e-6
+max_lr: 1e-4
 weight_decay: 1e-2
-
-tag_training: False
-text_frequency_opt: 1
-label_frequency_opt: 1
 
 loss:
   _target_: source.loss.NTXentLoss.NTXentLoss
