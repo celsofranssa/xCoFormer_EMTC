@@ -5,6 +5,6 @@ export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer_EMTC/
 python main.py \
   tasks=[predict,eval] \
   trainer.precision=16 \
-  model=SiBERT \
+  model=BERT \
   data=Wiki10-31k \
   data.folds=[0]

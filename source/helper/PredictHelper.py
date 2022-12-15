@@ -2,27 +2,26 @@ from omegaconf import OmegaConf
 import pytorch_lightning as pl
 from transformers import AutoTokenizer
 
-from source.DataModule.EMTCDataModule import EMTCDataModule
+from source.DataModule.XMTCDataModule import XMTCDataModule
 from source.callback.PredictionWriter import PredictionWriter
-from source.model.EMTCModel import EMTCModel
+from source.model.XMTCModel import XMTCModel
 
 
 class PredictHelper:
-    
+
     def __init__(self, params):
-        self.params=params
+        self.params = params
 
     def perform_predict(self):
         for fold in self.params.data.folds:
             # data
-            dm = EMTCDataModule(
+            dm = XMTCDataModule(
                 self.params.data,
-                text_tokenizer=self.get_tokenizer(self.params.model.text_tokenizer),
-                label_tokenizer=self.get_tokenizer(self.params.model.label_tokenizer),
+                self.get_tokenizer(self.params.model.tokenizer),
                 fold=fold)
 
             # model
-            model = EMTCModel.load_from_checkpoint(
+            model = XMTCModel.load_from_checkpoint(
                 checkpoint_path=f"{self.params.model_checkpoint.dir}{self.params.model.name}_{self.params.data.name}_{fold}.ckpt"
             )
 
@@ -37,8 +36,9 @@ class PredictHelper:
             dm.prepare_data()
             dm.setup("predict")
 
-            print(f"Predicting {self.params.model.name} over {self.params.data.name} (fold {fold}) with fowling params\n"
-                  f"{OmegaConf.to_yaml(self.params)}\n")
+            print(
+                f"Predicting {self.params.model.name} over {self.params.data.name} (fold {fold}) with fowling params\n"
+                f"{OmegaConf.to_yaml(self.params)}\n")
             trainer.predict(
                 model=model,
                 datamodule=dm,

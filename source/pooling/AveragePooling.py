@@ -10,7 +10,7 @@ class AveragePooling(LightningModule):
     def __init__(self):
         super(AveragePooling, self).__init__()
 
-    def forward(self, attention_mask, encoder_outputs):
+    def forward(self, encoder_outputs, attention_mask):
         """
 
         """
