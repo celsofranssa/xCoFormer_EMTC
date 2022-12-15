@@ -62,12 +62,13 @@ class SiEMTCDataset(Dataset):
     def _get_pseudo_labels(self, labels_ids):
         pseudo_labels = []
         for label_idx in labels_ids:
-            pseudo_labels.extend(
-                random.choices([label for (label, _) in self.pseudo_labels[label_idx]],
-                               [weight for (_, weight) in self.pseudo_labels[label_idx]],
-                               k=math.ceil((self.max_labels - len(labels_ids))/len(labels_ids))
-                               )
-            )
+            if label_idx in self.pseudo_labels and len(self.pseudo_labels[label_idx]) > 0:
+                pseudo_labels.extend(
+                    random.choices([label for (label, _) in self.pseudo_labels[label_idx]],
+                                   [weight for (_, weight) in self.pseudo_labels[label_idx]],
+                                   k=math.ceil((self.max_labels - len(labels_ids))/len(labels_ids))
+                                   )
+                )
         return pseudo_labels
 
     def _encode(self, sample):

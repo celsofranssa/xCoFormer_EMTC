@@ -7,7 +7,5 @@ text_max_length: 256
 labels_max_length: 64
 max_labels: 32
 
-pseudo_labels: False
-
 batch_size: 32
 num_workers: 12
