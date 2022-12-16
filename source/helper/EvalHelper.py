@@ -140,6 +140,7 @@ class EvalHelper:
             for cls in self.params.eval.label_cls:
                 ranking = self._get_ranking(text_predictions, label_predictions, cls=cls,
                                             num_nearest_neighbors=self.params.eval.num_nearest_neighbors)
+
                 result = evaluate(
                     Qrels(
                         {key: value for key, value in self.relevance_map.items() if key in ranking.keys()}

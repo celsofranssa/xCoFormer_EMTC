@@ -71,10 +71,44 @@ class SiEMTCModel(LightningModule):
         self.log("val_MRR", self.mrr.compute(), prog_bar=True)
         self.mrr.reset()
 
+    # def predict_step(self, batch, batch_idx, dataloader_idx=None):
+    #     text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
+    #         "labels"], batch["labels_mask"]
+    #     text_rpr = self.text_pool(self.encoder(text))
+    #     encoded_labels = self.encoder(labels)
+    #     e = self.label_pool(encoded_labels, labels_mask)
+    #     labels_rpr = torch.reshape(
+    #         e,
+    #         (labels.shape[0] * self.hparams.max_labels, self.hparams.hidden_size)
+    #     )
+    #
+    #     return {
+    #         "text_idx": text_idx,
+    #         "text_rpr": text_rpr,
+    #         "labels_ids": torch.flatten(labels_ids),
+    #         "labels_rpr": labels_rpr
+    #     }
+
     def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
-            "labels"], batch["labels_mask"]
+        if dataloader_idx == 0:
+            return self._predict_text(batch, batch_idx, dataloader_idx)
+        elif dataloader_idx == 1:
+            return self._predict_label(batch, batch_idx, dataloader_idx)
+        else:
+            raise Exception(f"The modality is expected to be text or label. ")
+
+    def _predict_text(self, batch, batch_idx, dataloader_idx):
+        text_idx, text = batch["text_idx"], batch["text"],
         text_rpr = self.text_pool(self.encoder(text))
+
+        return {
+            "text_idx": text_idx,
+            "text_rpr": text_rpr,
+            "modality": "text"
+        }
+
+    def _predict_label(self, batch, batch_idx, dataloader_idx):
+        labels_ids, labels, labels_mask = batch["labels_ids"], batch["labels"], batch["labels_mask"]
         encoded_labels = self.encoder(labels)
         e = self.label_pool(encoded_labels, labels_mask)
         labels_rpr = torch.reshape(
@@ -83,39 +117,10 @@ class SiEMTCModel(LightningModule):
         )
 
         return {
-            "text_idx": text_idx,
-            "text_rpr": text_rpr,
             "labels_ids": torch.flatten(labels_ids),
-            "labels_rpr": labels_rpr
+            "labels_rpr": labels_rpr,
+            "modality": "label"
         }
-
-    # def predict_step(self, batch, batch_idx, dataloader_idx=None):
-    #     if dataloader_idx == 0:
-    #         return self._predict_text(batch, batch_idx, dataloader_idx)
-    #     elif dataloader_idx == 1:
-    #         return self._predict_label(batch, batch_idx, dataloader_idx)
-    #     else:
-    #         raise Exception(f"The modality is expected to be text or label. ")
-    #
-    # def _predict_text(self, batch, batch_idx, dataloader_idx):
-    #     text_idx, text = batch["text_idx"], batch["text"],
-    #     text_rpr = self.text_pool(self.encoder(text))
-    #
-    #     return {
-    #         "text_idx": text_idx,
-    #         "text_rpr": text_rpr,
-    #         "modality": "text"
-    #     }
-    #
-    # def _predict_label(self, batch, batch_idx, dataloader_idx):
-    #     label_idx, label = batch["label_idx"], batch["label"]
-    #     label_rpr = self.text_pool(self.encoder(label))
-    #
-    #     return {
-    #         "label_idx": label_idx,
-    #         "label_rpr": label_rpr,
-    #         "modality": "label"
-    #     }
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.encoder.parameters(), lr=self.hparams.lr, betas=(0.9, 0.999),
