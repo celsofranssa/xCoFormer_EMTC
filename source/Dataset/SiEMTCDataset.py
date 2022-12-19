@@ -59,17 +59,36 @@ class SiEMTCDataset(Dataset):
 
         return token_ids, labels_mask
 
-    def _get_pseudo_labels(self, labels_ids):
+    def _encode_labels(self, labels_ids, labels):
+        tokenized_labels = []
+        for label_idx, label in zip(labels_ids, labels):
+            tokenized_labels.append(
+                self.tokenizer.encode(text=label, max_length=self.labels_max_length, padding="max_length", truncation=True))
+        return tokenized_labels
+
+    def _get_pseudo_labels(self, label_idx):
         pseudo_labels = []
-        for label_idx in labels_ids:
-            if label_idx in self.pseudo_labels and len(self.pseudo_labels[label_idx]) > 0:
-                pseudo_labels.extend(
-                    random.choices([label for (label, _) in self.pseudo_labels[label_idx]],
-                                   [weight for (_, weight) in self.pseudo_labels[label_idx]],
-                                   k=math.ceil((self.max_labels - len(labels_ids))/len(labels_ids))
-                                   )
-                )
+        if label_idx in self.pseudo_labels and len(self.pseudo_labels[label_idx]) > 0:
+            pseudo_labels = random.choices(
+                [label for (label, _) in self.pseudo_labels[label_idx]],
+                [weight for (_, weight) in self.pseudo_labels[label_idx]],
+                k=self.num_pseudo_labels
+            )
         return pseudo_labels
+
+
+
+    # def _get_pseudo_labels(self, labels_ids):
+    #     pseudo_labels = []
+    #     for label_idx in labels_ids:
+    #         if label_idx in self.pseudo_labels and len(self.pseudo_labels[label_idx]) > 0:
+    #             pseudo_labels.extend(
+    #                 random.choices([label for (label, _) in self.pseudo_labels[label_idx]],
+    #                                [weight for (_, weight) in self.pseudo_labels[label_idx]],
+    #                                k=math.ceil((self.max_labels - len(labels_ids))/len(labels_ids))
+    #                                )
+    #             )
+    #     return pseudo_labels
 
     def _encode(self, sample):
         sample["labels"].extend(self._get_pseudo_labels(sample["labels_ids"]))
