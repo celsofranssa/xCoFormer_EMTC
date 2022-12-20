@@ -71,23 +71,48 @@ class SiEMTCModel(LightningModule):
         self.log("val_MRR", self.mrr.compute(), prog_bar=True)
         self.mrr.reset()
 
-    def predict_step(self, batch, batch_idx, dataloader_idx=None):
-        text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
-            "labels"], batch["labels_mask"]
-        text_rpr = self.text_pool(self.encoder(text))
-        encoded_labels = self.encoder(labels)
-        e = self.label_pool(encoded_labels, labels_mask)
-        labels_rpr = torch.reshape(
-            e,
-            (labels.shape[0] * self.hparams.max_labels, self.hparams.hidden_size)
-        )
+    # def predict_step(self, batch, batch_idx, dataloader_idx=None):
+    #     text_idx, text, labels_ids, labels, labels_mask = batch["text_idx"], batch["text"], batch["labels_ids"], batch[
+    #         "labels"], batch["labels_mask"]
+    #     text_rpr = self.text_pool(self.encoder(text))
+    #     encoded_labels = self.encoder(labels)
+    #     e = self.label_pool(encoded_labels, labels_mask)
+    #     labels_rpr = torch.reshape(
+    #         e,
+    #         (labels.shape[0] * self.hparams.max_labels, self.hparams.hidden_size)
+    #     )
+    #
+    #     return {
+    #         "text_idx": text_idx,
+    #         "text_rpr": text_rpr,
+    #         "labels_ids": torch.flatten(labels_ids),
+    #         "labels_rpr": labels_rpr
+    #     }
 
-        return {
-            "text_idx": text_idx,
-            "text_rpr": text_rpr,
-            "labels_ids": torch.flatten(labels_ids),
-            "labels_rpr": labels_rpr
-        }
+    def predict_step(self, batch, batch_idx, dataloader_idx=None):
+        if dataloader_idx == 0:
+            text_idx, text, = batch["text_idx"], batch["text"]
+            text_rpr = self.text_pool(self.encoder(text))
+
+            return {
+                "text_idx": text_idx,
+                "text_rpr": text_rpr,
+                "modality": "text"
+            }
+        else:
+            labels_ids, labels, labels_mask = batch["labels_ids"], batch["labels"], batch["labels_mask"]
+            encoded_labels = self.encoder(labels)
+            e = self.label_pool(encoded_labels, labels_mask)
+            labels_rpr = torch.reshape(
+                e,
+                (labels.shape[0] * self.hparams.max_labels, self.hparams.hidden_size)
+            )
+
+            return {
+                "labels_ids": torch.flatten(labels_ids),
+                "labels_rpr": labels_rpr,
+                "modality": "label"
+            }
 
     # def predict_step(self, batch, batch_idx, dataloader_idx=None):
     #     if dataloader_idx == 0:

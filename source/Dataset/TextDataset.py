@@ -7,16 +7,18 @@ class TextDataset(Dataset):
     """Text Dataset.
     """
 
-    def __init__(self, samples, ids_path, tokenizer, text_max_length):
+    def __init__(self, samples, ids_paths, tokenizer, text_max_length):
         super(TextDataset, self).__init__()
         self.samples = samples
         self.tokenizer = tokenizer
         self.text_max_length = text_max_length
-        self._load_ids(ids_path)
+        self._load_ids(ids_paths)
 
-    def _load_ids(self, ids_path):
-        with open(ids_path, "rb") as ids_file:
-            self.ids = pickle.load(ids_file)
+    def _load_ids(self, ids_paths):
+        self.ids = []
+        for path in ids_paths:
+            with open(path, "rb") as ids_file:
+                self.ids.extend(pickle.load(ids_file))
 
     def _encode(self, sample):
         return {

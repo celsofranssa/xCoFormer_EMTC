@@ -29,26 +29,28 @@ class PredictionWriter(BasePredictionWriter):
         # print(f"\nlabels_ids ({torch.flatten(labels_ids).shape}):\n {torch.flatten(labels_ids)}\n")
         # print(f"\nlabels_rpr ({labels_rpr.shape}):\n {labels_rpr}\n")
 
-        for text_idx, text_rpr in zip(
-                prediction["text_idx"].tolist(),
-                prediction["text_rpr"].tolist()):
+        if prediction["modality"] == "text":
+            for text_idx, text_rpr in zip(
+                    prediction["text_idx"].tolist(),
+                    prediction["text_rpr"].tolist()):
 
-            predictions.append({
-                "text_idx": text_idx,
-                "text_rpr": text_rpr,
-                "modality": "text"
-            })
-
-        for label_idx, label_rpr in zip(
-                prediction["labels_ids"].tolist(),
-                prediction["labels_rpr"].tolist()):
-
-            if label_idx > 0:
                 predictions.append({
-                    "label_idx": label_idx,
-                    "label_rpr": label_rpr,
-                    "modality": "label"
+                    "text_idx": text_idx,
+                    "text_rpr": text_rpr,
+                    "modality": "text"
                 })
+
+        elif prediction["modality"] == "label":
+            for label_idx, label_rpr in zip(
+                    prediction["labels_ids"].tolist(),
+                    prediction["labels_rpr"].tolist()):
+
+                if label_idx >= 0:
+                    predictions.append({
+                        "label_idx": label_idx,
+                        "label_rpr": label_rpr,
+                        "modality": "label"
+                    })
 
         self._checkpoint(predictions, dataloader_idx, batch_idx)
 

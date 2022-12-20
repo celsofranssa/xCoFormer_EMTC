@@ -11,7 +11,7 @@ class SiEMTCDataset(Dataset):
     """Fit Dataset.
     """
 
-    def __init__(self, samples, pseudo_labels, ids_path, tokenizer, text_max_length, labels_max_length,
+    def __init__(self, samples, pseudo_labels, ids_paths, tokenizer, text_max_length, labels_max_length,
                  max_labels):
         super(SiEMTCDataset, self).__init__()
         self.samples = samples
@@ -20,11 +20,14 @@ class SiEMTCDataset(Dataset):
         self.text_max_length = text_max_length
         self.labels_max_length = labels_max_length
         self.max_labels = max_labels
-        self._load_ids(ids_path)
+        self._load_ids(ids_paths)
 
-    def _load_ids(self, ids_path):
-        with open(ids_path, "rb") as ids_file:
-            self.ids = pickle.load(ids_file)
+    def _load_ids(self, ids_paths):
+        self.ids = []
+        for path in ids_paths:
+            with open(path, "rb") as ids_file:
+                self.ids.extend(pickle.load(ids_file))
+
 
     def _create_label_mask(self, start, end):
         mask = [0] * self.labels_max_length
@@ -47,8 +50,6 @@ class SiEMTCDataset(Dataset):
 
         if len(labels_mask) < self.max_labels:
             labels_mask += [[0] * self.labels_max_length] * (self.max_labels - len(labels_mask))
-
-        # print(f"labels_mask ({len(labels_mask)}")
 
         tokens.append("[SEP]")
         token_ids = [self.tokenizer.convert_tokens_to_ids(token) for token in tokens]

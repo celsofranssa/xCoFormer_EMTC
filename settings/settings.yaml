@@ -37,9 +37,9 @@ result:
   dir: resource/result/
 
 eval:
-  metrics: ["mrr","ndcg","precision","recall"]
-  thresholds: [1,5,10]
-  num_nearest_neighbors: 10
+  metrics: ["mrr","ndcg","precision","recall","hit_rate"]
+  thresholds: [1,5,10,100]
+  num_nearest_neighbors: 100
   label_cls: ["all", "head", "tail"]
   index:
     M: 128

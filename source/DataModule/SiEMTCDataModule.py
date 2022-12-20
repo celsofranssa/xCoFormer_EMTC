@@ -30,7 +30,7 @@ class SiEMTCDataModule(pl.LightningDataModule):
             self.train_dataset = SiEMTCDataset(
                 samples=self.samples,
                 pseudo_labels=self.pseudo_labels,
-                ids_path=self.params.dir + f"fold_{self.fold}/train.pkl",
+                ids_paths=[self.params.dir + f"fold_{self.fold}/train.pkl"],
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
                 labels_max_length=self.params.labels_max_length,
@@ -40,7 +40,7 @@ class SiEMTCDataModule(pl.LightningDataModule):
             self.val_dataset = SiEMTCDataset(
                 samples=self.samples,
                 pseudo_labels=self.pseudo_labels,
-                ids_path=self.params.dir + f"fold_{self.fold}/val.pkl",
+                ids_paths=[self.params.dir + f"fold_{self.fold}/val.pkl"],
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
                 labels_max_length=self.params.labels_max_length,
@@ -48,15 +48,36 @@ class SiEMTCDataModule(pl.LightningDataModule):
             )
 
         if stage == 'test' or stage == "predict":
-            self.predict_dataset = SiEMTCDataset(
+            self.text_dataset = TextDataset(
+                samples=self.samples,
+                ids_paths=[self.params.dir + f"fold_{self.fold}/test.pkl"],
+                tokenizer=self.tokenizer,
+                text_max_length=self.params.text_max_length
+            )
+
+            self.label_dataset = LabelDataset(
                 samples=self.samples,
                 pseudo_labels=self.pseudo_labels,
-                ids_path=self.params.dir + f"fold_{self.fold}/test.pkl",
+                ids_paths=[self.params.dir + f"fold_{self.fold}/train.pkl",
+                           self.params.dir + f"fold_{self.fold}/val.pkl"
+                           ],
                 tokenizer=self.tokenizer,
-                text_max_length=self.params.text_max_length,
+
                 labels_max_length=self.params.labels_max_length,
                 max_labels=self.params.max_labels
             )
+            #
+            # self.predict_dataset = SiEMTCDataset(
+            #     samples=self.samples,
+            #     pseudo_labels=self.pseudo_labels,
+            #     ids_paths=[self.params.dir + f"fold_{self.fold}/train.pkl",
+            #                #self.params.dir + f"fold_{self.fold}/val.pkl"
+            #                ],
+            #     tokenizer=self.tokenizer,
+            #     text_max_length=self.params.text_max_length,
+            #     labels_max_length=self.params.labels_max_length,
+            #     max_labels=self.params.max_labels
+            # )
 
     def train_dataloader(self):
         return DataLoader(
@@ -75,8 +96,6 @@ class SiEMTCDataModule(pl.LightningDataModule):
         )
 
     def predict_dataloader(self):
-        return DataLoader(
-            self.predict_dataset,
-            batch_size=self.params.batch_size,
-            num_workers=self.params.num_workers
-        )
+        return [DataLoader(self.text_dataset, batch_size=self.params.batch_size, num_workers=self.params.num_workers),
+                DataLoader(self.label_dataset, batch_size=self.params.batch_size, num_workers=self.params.num_workers),
+        ]

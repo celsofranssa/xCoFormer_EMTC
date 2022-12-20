@@ -6,5 +6,12 @@ python main.py \
   tasks=[predict,eval] \
   trainer.precision=16 \
   model=SiBERT \
+  data=Eurlex-4k \
+  data.folds=[0]
+
+python main.py \
+  tasks=[predict,eval] \
+  trainer.precision=16 \
+  model=SiBERT \
   data=Wiki10-31k \
   data.folds=[0]
