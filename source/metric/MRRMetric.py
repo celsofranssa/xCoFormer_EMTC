@@ -25,7 +25,7 @@ class MRRMetric(Metric):
             relevance_map[f"text_{text_idx}"] = d
         return relevance_map
 
-    def update(self, text_idx, text_rpr, labels_ids, labels_rpr):
+    def update(self, text_idx, text_rpr, label_idx, label_rpr):
 
         for text_idx, text_rpr in zip(
                 text_idx.tolist(),
@@ -36,8 +36,8 @@ class MRRMetric(Metric):
         # print(f"\nlabels_rpr ({labels_rpr.shape}):\n {labels_rpr}\n")
 
         for label_idx, label_rpr in zip(
-                torch.flatten(labels_ids).tolist(),
-                labels_rpr.tolist()):
+                label_idx.tolist(),
+                label_rpr.tolist()):
             # print(f"\nlabel_idx:\n {label_idx}\n")
             # print(f"\nlabel_rpr:\n {label_rpr}\n")
             if label_idx >= 0:  # PAD labels have idx = -1

@@ -33,7 +33,6 @@ class PredictionWriter(BasePredictionWriter):
             for text_idx, text_rpr in zip(
                     prediction["text_idx"].tolist(),
                     prediction["text_rpr"].tolist()):
-
                 predictions.append({
                     "text_idx": text_idx,
                     "text_rpr": text_rpr,
@@ -42,15 +41,13 @@ class PredictionWriter(BasePredictionWriter):
 
         elif prediction["modality"] == "label":
             for label_idx, label_rpr in zip(
-                    prediction["labels_ids"].tolist(),
-                    prediction["labels_rpr"].tolist()):
-
-                if label_idx >= 0:
-                    predictions.append({
-                        "label_idx": label_idx,
-                        "label_rpr": label_rpr,
-                        "modality": "label"
-                    })
+                    prediction["label_idx"].tolist(),
+                    prediction["label_rpr"].tolist()):
+                predictions.append({
+                    "label_idx": label_idx,
+                    "label_rpr": label_rpr,
+                    "modality": "label"
+                })
 
         self._checkpoint(predictions, dataloader_idx, batch_idx)
 

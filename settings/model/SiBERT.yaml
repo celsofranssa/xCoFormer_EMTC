@@ -8,9 +8,7 @@ encoder:
   output_attentions: False
 
 hidden_size: 768
-text_max_length: ${data.text_max_length}
-labels_max_length: ${data.labels_max_length}
-max_labels: ${data.max_labels}
+
 
 batch_size: ${data.batch_size}
 
@@ -37,5 +35,4 @@ metric:
   relevance_map:
     dir: ${data.dir}
   num_nearest_neighbors: 10
-  max_labels: ${data.max_labels}
   index: ${eval.index}

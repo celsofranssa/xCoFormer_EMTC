@@ -33,8 +33,7 @@ class SiEMTCDataModule(pl.LightningDataModule):
                 ids_paths=[self.params.dir + f"fold_{self.fold}/train.pkl"],
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
-                labels_max_length=self.params.labels_max_length,
-                max_labels=self.params.max_labels
+                label_max_length=self.params.label_max_length
             )
 
             self.val_dataset = SiEMTCDataset(
@@ -43,8 +42,7 @@ class SiEMTCDataModule(pl.LightningDataModule):
                 ids_paths=[self.params.dir + f"fold_{self.fold}/val.pkl"],
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
-                labels_max_length=self.params.labels_max_length,
-                max_labels=self.params.max_labels
+                label_max_length=self.params.label_max_length
             )
 
         if stage == 'test' or stage == "predict":
@@ -62,22 +60,9 @@ class SiEMTCDataModule(pl.LightningDataModule):
                            self.params.dir + f"fold_{self.fold}/val.pkl"
                            ],
                 tokenizer=self.tokenizer,
-
-                labels_max_length=self.params.labels_max_length,
-                max_labels=self.params.max_labels
+                label_max_length=self.params.label_max_length
             )
-            #
-            # self.predict_dataset = SiEMTCDataset(
-            #     samples=self.samples,
-            #     pseudo_labels=self.pseudo_labels,
-            #     ids_paths=[self.params.dir + f"fold_{self.fold}/train.pkl",
-            #                #self.params.dir + f"fold_{self.fold}/val.pkl"
-            #                ],
-            #     tokenizer=self.tokenizer,
-            #     text_max_length=self.params.text_max_length,
-            #     labels_max_length=self.params.labels_max_length,
-            #     max_labels=self.params.max_labels
-            # )
+
 
     def train_dataloader(self):
         return DataLoader(

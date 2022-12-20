@@ -9,10 +9,17 @@ class TextDataset(Dataset):
 
     def __init__(self, samples, ids_paths, tokenizer, text_max_length):
         super(TextDataset, self).__init__()
-        self.samples = samples
+        self.texts = []
         self.tokenizer = tokenizer
         self.text_max_length = text_max_length
         self._load_ids(ids_paths)
+
+        for sample in samples:
+            if sample["idx"] in self.ids:
+                self.texts.append({
+                    "text_idx": sample["text_idx"],
+                    "text": sample["text"]
+                    })
 
     def _load_ids(self, ids_paths):
         self.ids = []
@@ -21,6 +28,7 @@ class TextDataset(Dataset):
                 self.ids.extend(pickle.load(ids_file))
 
     def _encode(self, sample):
+
         return {
             "text_idx": sample["text_idx"],
             "text": torch.tensor(
@@ -30,11 +38,9 @@ class TextDataset(Dataset):
         }
 
     def __len__(self):
-        return len(self.ids)
+        return len(self.texts)
 
     def __getitem__(self, idx):
         return self._encode(
-            self.samples[
-                self.ids[idx]
-            ]
+            self.texts[idx]
         )
