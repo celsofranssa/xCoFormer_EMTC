@@ -3,8 +3,8 @@ source ~/projects/venvs/xCoFormer_EMTC/bin/activate
 export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer_EMTC/
 
 python main.py \
-  tasks=[fit,predict,eval] \
+  tasks=[fit] \
   trainer.precision=16 \
-  model=SiBERT \
+  model=RerankerBERT \
   data=Wiki10-31k \
   data.folds=[0]

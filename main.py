@@ -4,13 +4,14 @@ from omegaconf import OmegaConf
 from source.helper.EvalHelper import EvalHelper
 from source.helper.FitHelper import FitHelper
 from source.helper.PredictHelper import PredictHelper
+from source.helper.RerankerFitHelper import RerankerFitHelper
 from source.helper.SiFitHelper import SiFitHelper
 from source.helper.SiPredictHelper import SiPredictHelper
 
 
 def fit(params):
-    if params.model.type =="dual":
-        fit_helper = FitHelper(params)
+    if params.model.type =="reranker":
+        fit_helper = RerankerFitHelper(params)
         fit_helper.perform_fit()
     elif params.model.type =="single":
         fit_helper = SiFitHelper(params)
