@@ -7,12 +7,12 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
-class XMTCRerankerDataset(Dataset):
+class RerankerFitDataset(Dataset):
     """Fit Dataset.
     """
 
     def __init__(self, samples, pseudo_labels, ids_paths, tokenizer, text_max_length, label_max_length):
-        super(XMTCRerankerDataset, self).__init__()
+        super(RerankerFitDataset, self).__init__()
         self.samples = []
         self.pseudo_labels = pseudo_labels
         self.tokenizer = tokenizer

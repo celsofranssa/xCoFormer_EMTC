@@ -8,7 +8,6 @@ from source.pooling.NoPooling import NoPooling
 
 
 class XMTCRerankerModel(LightningModule):
-    """Encodes the code and qs1 and qs2."""
 
     def __init__(self, hparams):
         super(XMTCRerankerModel, self).__init__()
@@ -41,7 +40,6 @@ class XMTCRerankerModel(LightningModule):
             },
             prefix=prefix)
 
-
     def forward(self, features):
         rpr = self.pool(self.encoder(features))
         return self.cls_head(rpr)[:, -1]
@@ -71,6 +69,20 @@ class XMTCRerankerModel(LightningModule):
     def validation_epoch_end(self, outs):
         self.val_metrics.compute()
 
+    def predict_step(self, features, batch_idx, dataloader_idx=0):
+        true_cls = features["cls"]
+        rpr = self.pool(self.encoder(features))
+        pred_cls = self.cls_head(
+            self.dropout(rpr)
+        )
+        pred_cls = torch.argmax(pred_cls, dim=-1)
+        return {
+            "text_idx": features["text_idx"],
+            "label_idx": features["label_idx"],
+            "true_cls": true_cls,
+            "pred_cls": pred_cls
+
+        }
 
     # def configure_optimizers(self):
     #     # optimizer
@@ -105,4 +117,3 @@ class XMTCRerankerModel(LightningModule):
             {"optimizer": optimizer,
              "lr_scheduler": {"scheduler": scheduler, "interval": "step", "name": "SCHDLR"}},
         )
-

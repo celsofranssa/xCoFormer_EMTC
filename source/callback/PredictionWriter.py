@@ -11,7 +11,7 @@ class PredictionWriter(BasePredictionWriter):
     def __init__(self, params):
         super(PredictionWriter, self).__init__(params.write_interval)
         self.params = params
-        self.checkpoint_dir = f"{self.params.dir}fold_{self.params.fold}/"
+        self.checkpoint_dir = f"{self.params.dir}fold_{self.params.fold_idx}/"
         Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
     def write_on_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", predictions: Sequence[Any],

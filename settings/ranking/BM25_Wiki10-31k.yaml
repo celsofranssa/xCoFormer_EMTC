@@ -1,0 +1,8 @@
+data:
+  name: Wiki10-31k
+  dir: ${data.dir}
+model:
+  name: BM25
+dir: resource/ranking/
+folds: [0,1,2,3,4]
+

@@ -5,7 +5,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from transformers import AutoTokenizer
 
 from source.DataModule.SiEMTCDataModule import SiEMTCDataModule
-from source.DataModule.XMTCRerankerDataModule import XMTCRerankerDataModule
+from source.DataModule.RerankerDataModule import RerankerDataModule
 from source.model.SiEMTCModel import SiEMTCModel
 from source.model.XMTCRerankerModel import XMTCRerankerModel
 
@@ -36,10 +36,10 @@ class RerankerFitHelper:
             )
 
             # datamodule
-            datamodule = XMTCRerankerDataModule(
+            datamodule = RerankerDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.tokenizer),
-                fold=fold)
+                fold_idx=fold)
 
             # model
             model = XMTCRerankerModel(self.params.model)

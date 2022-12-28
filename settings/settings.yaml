@@ -1,7 +1,7 @@
 defaults:
   - _self_
-  - model: BERT_TGT
-  - data: Eurlex-4k
+  - model: RerankerBERT
+  - data: Wiki10-31k
 
 tasks: [ "eval" ]
 
@@ -11,7 +11,7 @@ trainer:
   gpus: 1
   patience: 5
   min_delta: 0.03
-  precision: 32
+  precision: 16
   fast_dev_run: False
   progress_bar_refresh_rate: 1
 
@@ -23,6 +23,7 @@ model_checkpoint:
 
 ranking:
   dir: resource/ranking/
+  name: BM25_Wiki10-31k
 
 attention:
   dir: resource/attention
@@ -30,8 +31,9 @@ attention:
 
 prediction:
   dir: resource/prediction/${model.name}_${data.name}/
-  fold: 0
+  fold_idx: 0
   write_interval: batch
+
 
 result:
   dir: resource/result/
