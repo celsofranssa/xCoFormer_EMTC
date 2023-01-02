@@ -39,6 +39,7 @@ class RerankerFitHelper:
             datamodule = RerankerDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.tokenizer),
+                ranking=None,
                 fold_idx=fold)
 
             # model

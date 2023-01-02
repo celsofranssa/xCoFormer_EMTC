@@ -1,7 +1,7 @@
 defaults:
   - _self_
   - model: RerankerBERT
-  - data: Wiki10-31k
+  - data: Amazon-670k
 
 tasks: [ "eval" ]
 
@@ -23,7 +23,8 @@ model_checkpoint:
 
 ranking:
   dir: resource/ranking/
-  name: BM25_Wiki10-31k
+  retriever: BM25
+  name: ${ranking.retriever}_${data.name}
 
 attention:
   dir: resource/attention

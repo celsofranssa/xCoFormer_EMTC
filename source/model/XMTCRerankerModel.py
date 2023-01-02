@@ -1,6 +1,7 @@
 import torch
 from hydra.utils import instantiate
 from pytorch_lightning.core.lightning import LightningModule
+from torch import nn
 from torchmetrics import MetricCollection, F1Score
 from transformers import get_linear_schedule_with_warmup
 
@@ -58,9 +59,7 @@ class XMTCRerankerModel(LightningModule):
     def validation_step(self, features, batch_idx):
         true_cls = features["cls"]
         rpr = self.pool(self.encoder(features))
-        pred_cls = self.cls_head(
-            self.dropout(rpr)
-        )
+        pred_cls = self.cls_head(rpr)
 
         pred_cls = torch.argmax(pred_cls, dim=-1)
 
@@ -72,10 +71,11 @@ class XMTCRerankerModel(LightningModule):
     def predict_step(self, features, batch_idx, dataloader_idx=0):
         true_cls = features["cls"]
         rpr = self.pool(self.encoder(features))
-        pred_cls = self.cls_head(
-            self.dropout(rpr)
-        )
-        pred_cls = torch.argmax(pred_cls, dim=-1)
+        pred_cls = self.cls_head(rpr)
+        # print(f"Preds({true_cls})")
+        # print(f"Preds({pred_cls})")
+        pred_cls = nn.functional.softmax(pred_cls, dim=-1)[:, -1]
+        # print(f"Preds({pred_cls})")
         return {
             "text_idx": features["text_idx"],
             "label_idx": features["label_idx"],

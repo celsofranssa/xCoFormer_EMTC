@@ -4,30 +4,24 @@ from pytorch_lightning.core.lightning import LightningModule
 from transformers import get_constant_schedule_with_warmup, get_scheduler
 
 from source.metric.MRRMetric import MRRMetric
+from source.pooling.HiddenStatePooling import HiddenStatePooling
 from source.pooling.LabelMaxPooling import LabelMaxPooling
 from source.pooling.NoPooling import NoPooling
 
 
-class SiEMTCModel(LightningModule):
+class XMTCModel(LightningModule):
     """Encodes the text and label into an same space of embeddings."""
 
     def __init__(self, hparams):
 
-        super(SiEMTCModel, self).__init__()
+        super(XMTCModel, self).__init__()
         self.save_hyperparameters(hparams)
 
         # encoders
         self.encoder = instantiate(hparams.encoder)
 
         # pooling
-        self.pool = NoPooling()
-
-        self.dropout = torch.nn.Dropout(hparams.dropout)
-
-        self.cls_head = torch.nn.Sequential(
-            torch.nn.Linear(hparams.hidden_size, self.hparams.num_classes),
-            # torch.nn.LogSoftmax(dim=-1)
-        )
+        self.pool = HiddenStatePooling()
 
         # loss function
         self.loss = instantiate(hparams.loss)
@@ -39,21 +33,22 @@ class SiEMTCModel(LightningModule):
         pass
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
-        text_idx, text, label_idx, label = batch["text_idx"], batch["text"], batch["label_idx"], batch["label"]
-        text_rpr = self.encoder(text)
-        label_rpr = self.encoder(label)
-        train_loss = self.loss(text_idx, text_rpr, label_idx, label_rpr)
+        text_rpr = self.pool(
+            self.encoder(batch["text"])
+        )
+        label_rpr = self.pool(
+            self.encoder(batch["label"])
+        )
+        train_loss = self.loss(batch["text_idx"], text_rpr, batch["label_idx"], label_rpr)
 
-        # log training loss
         self.log('train_LOSS', train_loss)
 
         return train_loss
 
     def validation_step(self, batch, batch_idx):
-        text_idx, text, label_idx, label = batch["text_idx"], batch["text"], batch["label_idx"], batch["label"]
-        text_rpr = self.pool(self.encoder(text))
-        label_rpr = self.pool(self.encoder(label))
-        self.mrr.update(text_idx, text_rpr, label_idx, label_rpr)
+        text_rpr = self.pool(self.encoder(batch["text"]))
+        label_rpr = self.pool(self.encoder(batch["label"]))
+        self.mrr.update(batch["text_idx"], text_rpr, batch["label_idx"], label_rpr)
 
     def validation_epoch_end(self, outs):
         self.log("val_MRR", self.mrr.compute(), prog_bar=True)
