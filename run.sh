@@ -2,6 +2,7 @@
 source ~/projects/venvs/xCoFormer_EMTC/bin/activate
 export PYTHONPATH=$PATHONPATH:~/projects/xCoFormer_EMTC/
 
+
 python main.py \
   tasks=[fit] \
   trainer.precision=16 \
