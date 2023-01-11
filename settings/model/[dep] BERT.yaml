@@ -1,0 +1,56 @@
+name: BERT
+
+text_encoder:
+  _target_: source.encoder.text.BertEncoder.BertEncoder
+  architecture: bert-base-uncased
+  output_attentions: False
+  pooling:
+    _target_: source.pooling.NoPooling.NoPooling
+
+label_encoder:
+  _target_: source.encoder.label.BertEncoder.BertEncoder
+  architecture: bert-base-uncased
+  output_attentions: False
+  pooling:
+    _target_: source.pooling.LabelMaxPooling.LabelMaxPooling
+
+hidden_size: 768
+text_max_length: ${data.text_max_length}
+labels_max_length: ${data.labels_max_length}
+max_labels: ${data.max_labels}
+
+batch_size: ${data.batch_size}
+
+text_tokenizer:
+  architecture: ${model.text_encoder.architecture}
+
+label_tokenizer:
+  architecture: ${model.label_encoder.architecture}
+
+lr: 5e-6
+text_lr: 5e-6
+label_lr: 5e-6
+base_lr: 5e-7
+max_lr: 5e-5
+weight_decay: 1e-2
+
+tag_training: False
+text_frequency_opt: 1
+label_frequency_opt: 1
+
+loss:
+  _target_: source.loss.NTXentLoss.NTXentLoss
+  params:
+    name: NTXentLoss
+    miner:
+      relevance_map:
+        dir: ${data.dir}
+    criterion:
+      temperature: 0.07
+
+metric:
+  relevance_map:
+    dir: ${data.dir}
+  num_nearest_neighbors: 10
+  max_labels: ${data.max_labels}
+  index: ${eval.index}

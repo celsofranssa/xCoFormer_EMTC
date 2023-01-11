@@ -1,0 +1,22 @@
+name: RerankerBERT
+
+type: reranker
+
+encoder:
+  _target_: source.encoder.RerankerBERTEncoder.RerankerBERTEncoder
+  architecture: bert-base-uncased
+  output_attentions: False
+
+hidden_size: 768
+num_classes: 2
+dropout: 0.1
+
+tokenizer:
+  architecture: ${model.encoder.architecture}
+
+
+lr: 1e-4
+base_lr: 1e-6
+max_lr: 1e-4
+weight_decay: 1e-2
+

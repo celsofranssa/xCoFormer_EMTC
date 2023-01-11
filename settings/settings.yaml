@@ -1,7 +1,7 @@
 defaults:
   - _self_
-  - model: BERT_TGT
-  - data: Eurlex-4k
+  - model: BERT
+  - data: Wiki10-31k
 
 tasks: [ "eval" ]
 
@@ -11,7 +11,7 @@ trainer:
   gpus: 1
   patience: 5
   min_delta: 0.03
-  precision: 32
+  precision: 16
   fast_dev_run: False
   progress_bar_refresh_rate: 1
 
@@ -23,6 +23,8 @@ model_checkpoint:
 
 ranking:
   dir: resource/ranking/
+  retriever: BM25
+  name: ${ranking.retriever}_${data.name}
 
 attention:
   dir: resource/attention
@@ -30,17 +32,18 @@ attention:
 
 prediction:
   dir: resource/prediction/${model.name}_${data.name}/
-  fold: 0
+  fold_idx: 0
   write_interval: batch
+
 
 result:
   dir: resource/result/
 
 eval:
-  metrics: ["mrr","ndcg","precision","recall"]
-  thresholds: [1,5,10]
-  num_nearest_neighbors: 10
-  label_cls: ["all", "full", "few", "tail"]
+  metrics: ["mrr","ndcg","precision","recall","hit_rate"]
+  thresholds: [1,5,10,100]
+  num_nearest_neighbors: 100
+  label_cls: ["all", "head", "tail"]
   index:
     M: 128
     indexThreadQty: ${data.num_workers}

@@ -26,7 +26,7 @@ class PredictHelper:
                 checkpoint_path=f"{self.params.model_checkpoint.dir}{self.params.model.name}_{self.params.data.name}_{fold}.ckpt"
             )
 
-            self.params.prediction.fold = fold
+            self.params.prediction.fold_idx = fold
             # trainer
             trainer = pl.Trainer(
                 gpus=self.params.trainer.gpus,

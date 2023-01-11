@@ -11,7 +11,7 @@ class PredictionWriter(BasePredictionWriter):
     def __init__(self, params):
         super(PredictionWriter, self).__init__(params.write_interval)
         self.params = params
-        self.checkpoint_dir = f"{self.params.dir}fold_{self.params.fold}/"
+        self.checkpoint_dir = f"{self.params.dir}fold_{self.params.fold_idx}/"
         Path(self.checkpoint_dir).mkdir(parents=True, exist_ok=True)
 
     def write_on_epoch_end(self, trainer: "pl.Trainer", pl_module: "pl.LightningModule", predictions: Sequence[Any],
@@ -29,21 +29,20 @@ class PredictionWriter(BasePredictionWriter):
         # print(f"\nlabels_ids ({torch.flatten(labels_ids).shape}):\n {torch.flatten(labels_ids)}\n")
         # print(f"\nlabels_rpr ({labels_rpr.shape}):\n {labels_rpr}\n")
 
-        for text_idx, text_rpr in zip(
-                prediction["text_idx"].tolist(),
-                prediction["text_rpr"].tolist()):
+        if prediction["modality"] == "text":
+            for text_idx, text_rpr in zip(
+                    prediction["text_idx"].tolist(),
+                    prediction["text_rpr"].tolist()):
+                predictions.append({
+                    "text_idx": text_idx,
+                    "text_rpr": text_rpr,
+                    "modality": "text"
+                })
 
-            predictions.append({
-                "text_idx": text_idx,
-                "text_rpr": text_rpr,
-                "modality": "text"
-            })
-
-        for label_idx, label_rpr in zip(
-                prediction["labels_ids"].tolist(),
-                prediction["labels_rpr"].tolist()):
-
-            if label_idx > 0:
+        elif prediction["modality"] == "label":
+            for label_idx, label_rpr in zip(
+                    prediction["label_idx"].tolist(),
+                    prediction["label_rpr"].tolist()):
                 predictions.append({
                     "label_idx": label_idx,
                     "label_rpr": label_rpr,

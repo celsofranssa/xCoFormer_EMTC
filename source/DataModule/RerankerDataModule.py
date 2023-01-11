@@ -2,33 +2,30 @@ import pickle
 import pytorch_lightning as pl
 from torch.utils.data import DataLoader
 
-from source.Dataset.RankingDataset import RankingDataset
-from source.Dataset.SiEMTCDataset import SiEMTCDataset
+from source.Dataset.RerankerFitDataset import RerankerFitDataset
+from source.Dataset.RerankerPredictDataset import RerankerPredictDataset
 
 
-
-class SiEMTCDataModule(pl.LightningDataModule):
-    """
-    EMTC SiEMTCDataModule
-    """
+class RerankerDataModule(pl.LightningDataModule):
 
     def __init__(self, params, tokenizer, ranking, fold_idx):
-        super(SiEMTCDataModule, self).__init__()
+        super(RerankerDataModule, self).__init__()
         self.params = params
         self.tokenizer = tokenizer
         self.ranking = ranking
         self.fold_idx = fold_idx
 
     def prepare_data(self):
-        with open(f"{self.params.dir}samples_with_keywords.pkl", "rb") as dataset_file:
-            self.samples = pickle.load(dataset_file)
+        with open(f"{self.params.dir}samples.pkl", "rb") as samples_file:
+            self.samples = pickle.load(samples_file)
+
         with open(f"{self.params.dir}fold_{self.fold_idx}/pseudo_labels.pkl", "rb") as pseudo_labels_file:
             self.pseudo_labels = pickle.load(pseudo_labels_file)
 
     def setup(self, stage=None):
 
         if stage == 'fit':
-            self.train_dataset = SiEMTCDataset(
+            self.train_dataset = RerankerFitDataset(
                 samples=self.samples,
                 pseudo_labels=self.pseudo_labels,
                 ids_paths=[self.params.dir + f"fold_{self.fold_idx}/train.pkl"],
@@ -37,7 +34,7 @@ class SiEMTCDataModule(pl.LightningDataModule):
                 label_max_length=self.params.label_max_length
             )
 
-            self.val_dataset = SiEMTCDataset(
+            self.val_dataset = RerankerFitDataset(
                 samples=self.samples,
                 pseudo_labels=self.pseudo_labels,
                 ids_paths=[self.params.dir + f"fold_{self.fold_idx}/val.pkl"],
@@ -47,9 +44,9 @@ class SiEMTCDataModule(pl.LightningDataModule):
             )
 
         if stage == 'test' or stage == "predict":
-            self.predict_dataset = RankingDataset(
+            self.predict_dataset = RerankerPredictDataset(
                 samples=self.samples,
-                ranking=self.ranking[self.fold_idx],
+                rankings=self.ranking[self.fold_idx],
                 pseudo_labels=self.pseudo_labels,
                 tokenizer=self.tokenizer,
                 text_max_length=self.params.text_max_length,
@@ -79,3 +76,4 @@ class SiEMTCDataModule(pl.LightningDataModule):
             batch_size=self.params.batch_size,
             num_workers=self.params.num_workers
         )
+

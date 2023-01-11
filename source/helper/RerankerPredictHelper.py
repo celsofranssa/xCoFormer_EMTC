@@ -1,17 +1,13 @@
 import pickle
-
 from omegaconf import OmegaConf
 import pytorch_lightning as pl
 from transformers import AutoTokenizer
-
-from source.DataModule.SiEMTCDataModule import SiEMTCDataModule
-
+from source.DataModule.RerankerDataModule import RerankerDataModule
 from source.callback.RerankerPredictionWriter import RerankerPredictionWriter
+from source.model.XMTCRerankerModel import XMTCRerankerModel
 
-from source.model.XMTCModel import XMTCModel
 
-
-class SiPredictHelper:
+class RerankerPredictHelper:
 
     def __init__(self, params):
         self.params = params
@@ -19,14 +15,14 @@ class SiPredictHelper:
     def perform_predict(self):
         for fold_idx in self.params.data.folds:
             # data
-            dm = SiEMTCDataModule(
-                self.params.data,
-                self.get_tokenizer(self.params.model.tokenizer),
+            dm = RerankerDataModule(
+                params=self.params.data,
+                tokenizer=self._get_tokenizer(),
                 ranking=self._get_ranking(),
                 fold_idx=fold_idx)
 
             # model
-            model = XMTCModel.load_from_checkpoint(
+            model = XMTCRerankerModel.load_from_checkpoint(
                 checkpoint_path=f"{self.params.model_checkpoint.dir}{self.params.model.name}_{self.params.data.name}_{fold_idx}.ckpt"
             )
 
@@ -50,9 +46,10 @@ class SiPredictHelper:
 
             )
 
-    def get_tokenizer(self, params):
+
+    def _get_tokenizer(self):
         return AutoTokenizer.from_pretrained(
-            params.architecture
+            self.params.model.tokenizer.architecture
         )
 
     def _get_ranking(self):
