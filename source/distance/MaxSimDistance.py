@@ -10,7 +10,8 @@ class MaxSimDistance(BaseDistance):
 
     def compute_mat(self, text_rpr, label_rpr):
         m = torch.einsum('b i j, c k j -> b c i k', text_rpr, label_rpr)
-        return torch.max(m, -1).values.sum(dim=-1)
+        m = torch.max(m, -1).values.sum(dim=-1)
+        return torch.nn.functional.normalize(m, p=2, dim=-1)
 
     def pairwise_distance(self, query_emb, ref_emb):
         raise NotImplementedError

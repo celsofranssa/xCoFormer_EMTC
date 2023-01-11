@@ -3,8 +3,8 @@ dir: resource/dataset/Amazon-670k/
 
 folds: [0]
 
-text_max_length: 256
-label_max_length: 64
+text_max_length: 128
+label_max_length: 128
 
 batch_size: 64
 num_workers: 12

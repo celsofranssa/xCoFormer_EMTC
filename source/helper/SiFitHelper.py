@@ -5,7 +5,8 @@ from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, Learning
 from transformers import AutoTokenizer
 
 from source.DataModule.SiEMTCDataModule import SiEMTCDataModule
-from source.model.SiEMTCModel import SiEMTCModel
+
+from source.model.XMTCModel import XMTCModel
 
 
 class SiFitHelper:
@@ -15,7 +16,7 @@ class SiFitHelper:
 
     def perform_fit(self):
         seed_everything(707, workers=True)
-        for fold in self.params.data.folds:
+        for fold_idx in self.params.data.folds:
 
             # Initialize a trainer
             trainer = pl.Trainer(
@@ -24,9 +25,9 @@ class SiFitHelper:
                 precision=self.params.trainer.precision,
                 gpus=self.params.trainer.gpus,
                 progress_bar_refresh_rate=self.params.trainer.progress_bar_refresh_rate,
-                logger=self.get_logger(self.params, fold),
+                logger=self.get_logger(self.params, fold_idx),
                 callbacks=[
-                    self.get_model_checkpoint_callback(self.params, fold),  # checkpoint_callback
+                    self.get_model_checkpoint_callback(self.params, fold_idx),  # checkpoint_callback
                     self.get_early_stopping_callback(self.params),  # early_stopping_callback
                     self.get_lr_monitor(),
                     self.get_progress_bar_callback()
@@ -37,14 +38,15 @@ class SiFitHelper:
             datamodule = SiEMTCDataModule(
                 self.params.data,
                 self.get_tokenizer(self.params.model.tokenizer),
-                fold=fold)
+                ranking=None,
+                fold_idx=fold_idx)
 
             # model
-            model = SiEMTCModel(self.params.model)
+            model = XMTCModel(self.params.model)
 
             # Train the ⚡ model
             print(
-                f"Fitting {self.params.model.name} over {self.params.data.name} (fold {fold}) with fowling self.params\n"
+                f"Fitting {self.params.model.name} over {self.params.data.name} (fold {fold_idx}) with fowling self.params\n"
                 f"{OmegaConf.to_yaml(self.params)}\n")
             trainer.fit(
                 model=model,

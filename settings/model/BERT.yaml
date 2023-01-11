@@ -25,6 +25,7 @@ loss:
         dir: ${data.dir}
     criterion:
       temperature: 0.07
+      mat_based_loss: True
 
 metric:
   relevance_map:

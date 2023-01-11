@@ -20,15 +20,26 @@ class SiEMTCDataset(Dataset):
         self.label_max_length = label_max_length
         self._load_ids(ids_paths)
 
-        for sample in samples:
-            if sample["idx"] in self.ids:
-                for label_idx, label in zip(sample["labels_ids"], sample["labels"]):
-                    self.samples.append({
-                        "text_idx": sample["text_idx"],
-                        "text": sample["text"],
-                        "label_idx": label_idx,
-                        "label": label + " ".join(x[0] for x in pseudo_labels[label_idx])
-                    })
+        for idx in tqdm(self.ids, desc="Reading samples"):
+            for label_idx, label in zip(samples[idx]["labels_ids"], samples[idx]["labels"]):
+                self.samples.append({
+                    "text_idx": samples[idx]["text_idx"],
+                    "text": " ".join(x[0] for x in samples[idx]["keywords"]),  # sample["text"],
+                    "label_idx": label_idx,
+                    "label": label + " ".join(x[0] for x in pseudo_labels[label_idx])
+                })
+
+        #
+        # for sample in tqdm(samples, desc="Reading samples"):
+        #     if sample["idx"] in self.ids:
+        #         for label_idx, label in zip(sample["labels_ids"], sample["labels"]):
+        #             a = {
+        #                 "text_idx": sample["text_idx"],
+        #                 "text": " ".join(x[0] for x in sample["keywords"]), #sample["text"],
+        #                 "label_idx": label_idx,
+        #                 "label": label + " ".join(x[0] for x in pseudo_labels[label_idx])
+        #             }
+        #             self.samples.append(a)
 
     def _load_ids(self, ids_paths):
         self.ids = []
@@ -37,7 +48,6 @@ class SiEMTCDataset(Dataset):
                 self.ids.extend(pickle.load(ids_file))
 
     def _encode(self, sample):
-
         return {
             "text_idx": sample["text_idx"],
             "text": torch.tensor(

@@ -1,9 +1,9 @@
 name: Wiki10-31k
 dir: resource/dataset/Wiki10-31k/
 
-folds: [0]
+folds: [0,1,2,3,4]
 
-text_max_length: 256
+text_max_length: 128
 label_max_length: 128
 
 batch_size: 64

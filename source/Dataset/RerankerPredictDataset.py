@@ -25,18 +25,16 @@ class RerankerPredictDataset(Dataset):
             for label_idx, label in zip(sample["labels_ids"], sample["labels"]):
                 labels[label_idx] = label
 
-        ranking = rankings["all"]
-        for text_idx, labels_scores in tqdm(ranking.items(), desc="Reading ranking"):
+        for text_idx, labels_scores in tqdm(rankings["all"].items(), desc="Reading ranking"):
             text_idx = int(text_idx.split("_")[-1])
-            min_socore, max_score = min(labels_scores.values()), max(labels_scores.values())
             for label_idx, score in labels_scores.items():
                 label_idx = int(label_idx.split("_")[-1])
                 self.samples.append({
                     "text_idx": text_idx,
                     "text": texts[text_idx],
                     "label_idx": label_idx,
-                    "label": labels[label_idx],
-                    "cls": (score - min_socore)/(max_score-min_socore)
+                    "label": labels[label_idx] + " ".join(x[0] for x in pseudo_labels[label_idx]),
+                    "cls": score
                 })
 
     def _encode(self, sample):

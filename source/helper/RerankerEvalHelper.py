@@ -73,7 +73,7 @@ class RerankerEvalHelper:
             for prediction in torch.load(path):
                 text_idx = prediction["text_idx"]
                 label_idx = prediction["label_idx"]
-                score = prediction["pred_cls"] + prediction["true_cls"]
+                score = prediction["pred_cls"]
                 if f"text_{text_idx}" not in ranking:
                     ranking[f"text_{text_idx}"] = {}
                 if score > ranking[f"text_{text_idx}"].get(f"label_{label_idx}", -1e9):

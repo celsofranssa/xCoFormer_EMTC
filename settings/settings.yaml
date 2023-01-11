@@ -1,7 +1,7 @@
 defaults:
   - _self_
-  - model: RerankerBERT
-  - data: Amazon-670k
+  - model: BERT
+  - data: Wiki10-31k
 
 tasks: [ "eval" ]
 

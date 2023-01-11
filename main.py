@@ -33,6 +33,10 @@ def eval(params):
     if params.model.type == "reranker":
         eval_helper = RerankerEvalHelper(params)
         eval_helper.perform_eval()
+    elif params.model.type == "single":
+        eval_helper = RerankerEvalHelper(params)
+        eval_helper.perform_eval()
+
 
 
 @hydra.main(config_path="settings", config_name="settings.yaml", version_base=None)
